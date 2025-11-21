@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Output files
+outputs/
+*.json
+!examples/*.json
+!tests/*.json
