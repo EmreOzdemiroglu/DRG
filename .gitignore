@@ -34,8 +34,6 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-outputs/*.json
-!outputs/.gitkeep
 .DS_Store
 *.swp
 *.swo
