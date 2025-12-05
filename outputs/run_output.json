@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "id": "Apple",
+      "type": "Company"
+    },
+    {
+      "id": "iPhone 16",
+      "type": "Product"
+    },
+    {
+      "id": "Google",
+      "type": "Company"
+    },
+    {
+      "id": "Android",
+      "type": "Product"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Apple",
+      "type": "produces",
+      "target": "iPhone 16"
+    }
+  ]
+}

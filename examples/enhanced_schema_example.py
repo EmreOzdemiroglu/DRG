@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Enhanced DRG Schema Örneği - Declarative yapı ile
+Enhanced DRG Schema Örneği - Declarative yapı ile.
+Koşum: `uv run python examples/enhanced_schema_example.py`
 """
 
 import os
 import sys
 from pathlib import Path
 
-# Proje root'u path'e ekle
+# Proje root'unu path'e ekle
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from drg import (
@@ -22,6 +23,9 @@ from drg import (
 )
 
 
+OUTPUT_DIR = Path("outputs")
+
+
 def main():
     print("=" * 60)
     print("🚀 Enhanced DRG Schema Örneği")
@@ -34,22 +38,21 @@ def main():
                 name="Company",
                 description="Business organizations that produce products or provide services",
                 examples=["Apple", "Google", "Microsoft", "Samsung"],
-                properties={"industry": "tech", "type": "corporation"}
+                properties={"industry": "tech", "type": "corporation"},
             ),
             EntityType(
                 name="Product",
                 description="Tangible or intangible goods produced by companies",
                 examples=["iPhone", "Android", "Windows", "Galaxy"],
-                properties={"category": "technology"}
+                properties={"category": "technology"},
             ),
             EntityType(
                 name="Person",
                 description="Individuals associated with companies or products",
                 examples=["Tim Cook", "Sundar Pichai", "Satya Nadella"],
-                properties={"role": "executive"}
-            )
+                properties={"role": "executive"},
+            ),
         ],
-        
         relation_groups=[
             RelationGroup(
                 name="production",
@@ -57,15 +60,15 @@ def main():
                 relations=[
                     Relation("produces", "Company", "Product"),
                     Relation("manufactures", "Company", "Product"),
-                    Relation("develops", "Company", "Product")
+                    Relation("develops", "Company", "Product"),
                 ],
                 examples=[
                     {
                         "text": "Apple produces iPhones",
                         "entities": [("Apple", "Company"), ("iPhone", "Product")],
-                        "relations": [("Apple", "produces", "iPhone")]
+                        "relations": [("Apple", "produces", "iPhone")],
                     }
-                ]
+                ],
             ),
             RelationGroup(
                 name="employment",
@@ -73,12 +76,11 @@ def main():
                 relations=[
                     Relation("employs", "Company", "Person"),
                     Relation("CEO_of", "Person", "Company"),
-                    Relation("founder_of", "Person", "Company")
-                ]
-            )
+                    Relation("founder_of", "Person", "Company"),
+                ],
+            ),
         ],
-        
-        auto_discovery=True  # Automatically find new relation patterns
+        auto_discovery=True,  # Automatically find new relation patterns
     )
     
     print("✓ Enhanced Schema oluşturuldu")
@@ -117,12 +119,12 @@ def main():
             ("iPhone 16", "Product"),
             ("Tim Cook", "Person"),
             ("Google", "Company"),
-            ("Android", "Product")
+            ("Android", "Product"),
         ]
         triples = [
             ("Apple", "produces", "iPhone 16"),
             ("Tim Cook", "CEO_of", "Apple"),
-            ("Google", "develops", "Android")
+            ("Google", "develops", "Android"),
         ]
         
         kg = KG.from_typed(entities, triples)
@@ -132,10 +134,9 @@ def main():
         print(output_json)
         
         # Output'u kaydet
-        os.makedirs("outputs", exist_ok=True)
-        output_file = "outputs/enhanced_schema_example_mock.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(output_json)
+        OUTPUT_DIR.mkdir(exist_ok=True)
+        output_file = OUTPUT_DIR / "enhanced_schema_example_mock.json"
+        output_file.write_text(output_json, encoding="utf-8")
         print(f"\n💾 Output kaydedildi: {output_file}")
         return
     
@@ -171,10 +172,9 @@ def main():
         print(output_json)
         
         # Output'u kaydet
-        os.makedirs("outputs", exist_ok=True)
-        output_file = "outputs/enhanced_schema_example.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(output_json)
+        OUTPUT_DIR.mkdir(exist_ok=True)
+        output_file = OUTPUT_DIR / "enhanced_schema_example.json"
+        output_file.write_text(output_json, encoding="utf-8")
         print(f"\n💾 Output kaydedildi: {output_file}")
         
     except Exception as e:
