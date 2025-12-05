@@ -1,0 +1,17 @@
+[project]
+name = "drg"
+version = "0.1.0a0"
+description = "Declarative Relationship Generation (DRG)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Your Name"}]
+dependencies = [
+    "dspy>=2.4.0",
+]
+
+[project.scripts]
+drg = "drg.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
