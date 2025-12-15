@@ -1,0 +1,451 @@
+# DRG Project: Cursor Rules
+
+## Proje Genel Bakış
+
+DRG (Dynamic Retrieval Graph), dataset-agnostic bir semantic pipeline'dır. RAG ve GraphRAG experimentation için tasarlanmış, research-grade, community publication-ready bir sistemdir.
+
+## Mimari Prensipler
+
+### Monolithic-Modular Mimarisi
+
+- **Monolithic**: Tüm bileşenler aynı codebase içinde, tek bir deployment unit
+- **Modular**: Her bileşen bağımsız interface'ler üzerinden iletişim kurar
+- **Loose Coupling**: Bileşenler arası bağımlılıklar minimal ve açıkça tanımlıdır
+- **High Cohesion**: İlgili fonksiyonellik aynı modülde gruplanır
+
+### Dataset-Agnostic Tasarım
+
+- **Abstraction Layers**: Veri kaynağı, chunking stratejisi ve embedding modeli arasında net arayüzler
+- **Pluggable Components**: Her bileşen bağımsız olarak değiştirilebilir ve test edilebilir
+- **Metadata Preservation**: Her chunk, orijin veri kaynağı ve işlem geçmişi hakkında zengin metadata taşır
+- **Domain Adaptation**: Domain-specific optimizasyonlar, core pipeline'ı değiştirmeden eklenebilir
+
+## Folder Structure
+
+```
+DRG/
+├── drg/                    # Ana modül (monolithic codebase)
+│   ├── __init__.py         # Public API exports
+│   ├── ingestion/          # Data ingestion layer
+│   │   ├── __init__.py
+│   │   ├── normalizers.py  # Format normalization
+│   │   └── parsers.py      # Format-specific parsers
+│   ├── chunking/           # Chunking layer
+│   │   ├── __init__.py
+│   │   ├── strategies.py   # Chunking strategies (token, sentence, semantic)
+│   │   └── validators.py   # Chunk validation
+│   ├── embedding/          # Embedding abstraction layer
+│   │   ├── __init__.py
+│   │   ├── providers.py    # Embedding provider interfaces
+│   │   ├── openai.py       # OpenAI provider
+│   │   ├── gemini.py       # Gemini provider
+│   │   ├── openrouter.py   # OpenRouter provider
+│   │   └── local.py        # Local model provider
+│   ├── vector_store/       # Vector store abstraction
+│   │   ├── __init__.py
+│   │   ├── interface.py    # Vector store interface
+│   │   ├── chroma.py       # Chroma implementation
+│   │   ├── qdrant.py       # Qdrant implementation
+│   │   └── faiss.py        # FAISS implementation
+│   ├── retrieval/          # Retrieval layer
+│   │   ├── __init__.py
+│   │   ├── rag.py          # Classic RAG retrieval
+│   │   ├── drg_search.py   # DRG search algorithms
+│   │   └── hybrid.py       # Hybrid RAG + GraphRAG
+│   ├── graph/              # Knowledge graph layer (existing)
+│   │   ├── __init__.py
+│   │   ├── schema.py       # DRG schema (existing)
+│   │   ├── extract.py      # Entity/relation extraction (existing)
+│   │   ├── graph.py        # KG class (existing)
+│   │   └── storage.py      # Graph storage abstraction
+│   ├── clustering/         # Clustering layer
+│   │   ├── __init__.py
+│   │   ├── algorithms.py  # Clustering algorithms (Louvain, Leiden, Spectral)
+│   │   └── summarization.py # Cluster summarization
+│   └── cli.py              # CLI interface (existing)
+├── docs/                   # Documentation (NO CODE)
+│   ├── pipeline_overview.md
+│   ├── chunking_strategy.md
+│   ├── semantic_retrieval_design.md
+│   ├── drg_search.md
+│   ├── multi_dataset_evaluation.md
+│   └── clustering_summarization.md
+├── examples/               # Usage examples
+│   ├── simple_example.py
+│   ├── enhanced_schema_example.py
+│   └── pipeline_example.py
+├── tests/                  # Test suite
+│   ├── test_basic.py
+│   ├── test_chunking.py
+│   ├── test_retrieval.py
+│   └── test_clustering.py
+├── outputs/                # Generated outputs
+├── pyproject.toml          # Project configuration
+└── README.md               # Project README
+```
+
+## Documentation Placement
+
+### Documentation Files (docs/)
+
+- **NO CODE INSIDE**: Documentation dosyaları sadece tasarım, mimari, trade-off'lar ve evaluation metodolojisi içerir
+- **Technical Focus**: Implementation-agnostic, research-grade documentation
+- **Structured**: Her dokümantasyon dosyası net bir yapıya sahiptir (Genel Bakış, Tasarım, Trade-off'lar, Evaluation)
+
+### Code Documentation
+
+- **Docstrings**: Tüm public API'ler için docstring'ler (Google style)
+- **Type Hints**: Tüm fonksiyonlar type hint'li
+- **Comments**: Complex logic için inline comments
+
+## Coding Principles
+
+### 1. Interface-First Design
+
+Her bileşen için önce interface tanımla, sonra implementation:
+
+```python
+# Interface
+class EmbeddingProvider(ABC):
+    @abstractmethod
+    def embed(self, text: str) -> List[float]:
+        pass
+    
+    @abstractmethod
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        pass
+
+# Implementation
+class OpenAIEmbeddingProvider(EmbeddingProvider):
+    def embed(self, text: str) -> List[float]:
+        # Implementation
+        pass
+```
+
+### 2. Dependency Injection
+
+Hard dependencies yerine dependency injection kullan:
+
+```python
+# Bad
+class Chunker:
+    def __init__(self):
+        self.tokenizer = TiktokenTokenizer()  # Hard dependency
+
+# Good
+class Chunker:
+    def __init__(self, tokenizer: Tokenizer):
+        self.tokenizer = tokenizer  # Injected dependency
+```
+
+### 3. Configuration Management
+
+Environment variables ve configuration files kullan:
+
+```python
+# Configuration
+EMBEDDING_PROVIDER = os.getenv("DRG_EMBEDDING_PROVIDER", "openai")
+EMBEDDING_MODEL = os.getenv("DRG_EMBEDDING_MODEL", "text-embedding-3-small")
+CHUNK_SIZE = int(os.getenv("DRG_CHUNK_SIZE", "768"))
+OVERLAP_RATIO = float(os.getenv("DRG_OVERLAP_RATIO", "0.15"))
+```
+
+### 4. Error Handling
+
+Comprehensive error handling:
+
+```python
+try:
+    result = provider.embed(text)
+except EmbeddingError as e:
+    logger.error(f"Embedding failed: {e}")
+    raise
+except Exception as e:
+    logger.error(f"Unexpected error: {e}")
+    raise EmbeddingError(f"Embedding failed: {e}") from e
+```
+
+### 5. Logging
+
+Structured logging:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.info("Chunking started", extra={
+    "dataset": dataset_name,
+    "chunk_size": chunk_size,
+    "overlap_ratio": overlap_ratio
+})
+```
+
+### 6. Type Safety
+
+Type hints kullan:
+
+```python
+from typing import List, Dict, Optional, Tuple
+
+def chunk_text(
+    text: str,
+    chunk_size: int = 768,
+    overlap_ratio: float = 0.15
+) -> List[Dict[str, Any]]:
+    """Chunk text into segments."""
+    pass
+```
+
+## Model Abstraction & Selection Strategy
+
+### Embedding Provider Selection
+
+1. **Cost Optimization**: Local → OpenRouter → Provider-specific
+2. **Quality Optimization**: OpenAI large → OpenAI small → Local
+3. **Latency Optimization**: Local (batch) → API (streaming)
+4. **Portability**: Local → OpenRouter → Provider-specific
+
+### Provider Interface
+
+Tüm embedding provider'lar aynı interface'i implement etmeli:
+
+```python
+class EmbeddingProvider(ABC):
+    @abstractmethod
+    def embed(self, text: str) -> List[float]:
+        """Embed single text."""
+        pass
+    
+    @abstractmethod
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Embed batch of texts."""
+        pass
+    
+    @abstractmethod
+    def get_dimension(self) -> int:
+        """Get embedding dimension."""
+        pass
+    
+    @abstractmethod
+    def get_model_name(self) -> str:
+        """Get model name."""
+        pass
+```
+
+### Provider Factory
+
+Provider'ları factory pattern ile oluştur:
+
+```python
+class EmbeddingProviderFactory:
+    @staticmethod
+    def create(provider_name: str, **kwargs) -> EmbeddingProvider:
+        if provider_name == "openai":
+            return OpenAIEmbeddingProvider(**kwargs)
+        elif provider_name == "gemini":
+            return GeminiEmbeddingProvider(**kwargs)
+        # ...
+```
+
+## Testing Strategy
+
+### Unit Tests
+
+- Her modül için unit test'ler
+- Mock dependencies
+- Test coverage > 80%
+
+### Integration Tests
+
+- End-to-end pipeline test'leri
+- Multi-dataset evaluation test'leri
+- Performance benchmark'leri
+
+### Test Structure
+
+```python
+# tests/test_chunking.py
+def test_token_based_chunking():
+    """Test token-based chunking strategy."""
+    pass
+
+def test_overlap_strategy():
+    """Test overlap strategy."""
+    pass
+```
+
+## Code Quality
+
+### Linting
+
+- **ruff**: Fast Python linter
+- **mypy**: Type checking
+- **black**: Code formatting
+
+### Pre-commit Hooks
+
+- Linting
+- Type checking
+- Formatting
+- Test running
+
+## Documentation Standards
+
+### Docstring Format
+
+Google style docstrings:
+
+```python
+def chunk_text(
+    text: str,
+    chunk_size: int = 768,
+    overlap_ratio: float = 0.15
+) -> List[Dict[str, Any]]:
+    """Chunk text into segments.
+    
+    Args:
+        text: Input text to chunk
+        chunk_size: Target chunk size in tokens
+        overlap_ratio: Overlap ratio between chunks (0.0-1.0)
+    
+    Returns:
+        List of chunk dictionaries with metadata
+    
+    Raises:
+        ValueError: If chunk_size or overlap_ratio is invalid
+    """
+    pass
+```
+
+### README Structure
+
+- Project overview
+- Installation
+- Quick start
+- API reference
+- Examples
+- Contributing
+
+## Development Workflow
+
+### Branch Strategy
+
+- `main`: Production-ready code
+- `develop`: Development branch
+- `feature/*`: Feature branches
+- `docs/*`: Documentation updates
+
+### Commit Messages
+
+Conventional commits:
+
+```
+feat: Add token-based chunking strategy
+fix: Fix overlap calculation bug
+docs: Update chunking strategy documentation
+test: Add chunking quality tests
+```
+
+## Performance Considerations
+
+### Batch Processing
+
+Mümkün olduğunca batch processing kullan:
+
+```python
+# Good
+embeddings = provider.embed_batch(texts)
+
+# Bad
+embeddings = [provider.embed(text) for text in texts]
+```
+
+### Caching
+
+Expensive operations için caching:
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=1000)
+def embed_text(text: str) -> List[float]:
+    return provider.embed(text)
+```
+
+### Async Processing
+
+I/O-bound operations için async:
+
+```python
+import asyncio
+
+async def embed_batch_async(texts: List[str]) -> List[List[float]]:
+    tasks = [provider.embed_async(text) for text in texts]
+    return await asyncio.gather(*tasks)
+```
+
+## Security Considerations
+
+### API Keys
+
+- Environment variables kullan
+- Never commit API keys
+- Use secrets management (optional)
+
+### Input Validation
+
+Tüm input'ları validate et:
+
+```python
+def chunk_text(text: str, chunk_size: int, overlap_ratio: float):
+    if not text:
+        raise ValueError("Text cannot be empty")
+    if chunk_size < 1:
+        raise ValueError("Chunk size must be positive")
+    if not 0 <= overlap_ratio <= 1:
+        raise ValueError("Overlap ratio must be between 0 and 1")
+    # ...
+```
+
+## Research & Experimentation
+
+### Experiment Tracking
+
+- Experiment configuration'ları version control'de
+- Results'ları structured format'ta sakla (JSON, CSV)
+- Reproducibility için random seed'leri kaydet
+
+### Evaluation Metrics
+
+- Standardized evaluation metrics
+- Multi-dataset evaluation
+- Statistical significance testing
+
+## Community & Publication
+
+### Code Quality
+
+- Research-grade code quality
+- Comprehensive documentation
+- Reproducible experiments
+
+### Open Source
+
+- MIT License
+- Clear contribution guidelines
+- Community-friendly structure
+
+## Validation Checklist
+
+Her yeni feature için:
+
+- [ ] Interface tanımlandı mı?
+- [ ] Type hints eklendi mi?
+- [ ] Docstring'ler yazıldı mı?
+- [ ] Unit test'ler yazıldı mı?
+- [ ] Error handling eklendi mi?
+- [ ] Logging eklendi mi?
+- [ ] Configuration management eklendi mi?
+- [ ] Documentation güncellendi mi?
+
