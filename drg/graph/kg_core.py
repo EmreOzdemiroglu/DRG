@@ -298,3 +298,4 @@ class EnhancedKG:
             kg.add_edge(edge)
         return kg
 
+

@@ -224,3 +224,4 @@ class CommunityReportGenerator:
         lines.append("=" * 70)
         return "\n".join(lines)
 
+

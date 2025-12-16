@@ -173,3 +173,4 @@ class KGVisualizer:
         html_content = self.to_pyvis_html(height=height, width=width)
         path.write_text(html_content, encoding="utf-8")
 
+
