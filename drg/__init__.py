@@ -14,6 +14,60 @@ from .schema import (
 from .extract import extract_typed, extract_triples, KGExtractor
 from .graph import KG
 
+# Graph Module (Person 2 - Schema, KG, Visualization, Reports)
+from .graph import (
+    # Schema Generator
+    PropertyDefinition,
+    EntityClassDefinition,
+    DatasetAgnosticSchemaGenerator,
+    create_default_schema,
+    # Relationship Model
+    RelationshipType,
+    EnrichedRelationship,
+    RelationshipTypeClassifier,
+    create_enriched_relationship,
+    RELATIONSHIP_CATEGORIES,
+    # KG Core
+    KGNode,
+    KGEdge,
+    Cluster,
+    EnhancedKG,
+    # Visualization
+    KGVisualizer,
+    DEFAULT_NODE_COLORS,
+    DEFAULT_EDGE_COLORS,
+    # Community Report
+    CommunityReport,
+    CommunityReportGenerator,
+)
+
+# Graph Module (Person 2 - Schema, KG, Visualization, Reports)
+from .graph import (
+    # Schema Generator
+    PropertyDefinition,
+    EntityClassDefinition,
+    DatasetAgnosticSchemaGenerator,
+    create_default_schema,
+    # Relationship Model
+    RelationshipType,
+    EnrichedRelationship,
+    RelationshipTypeClassifier,
+    create_enriched_relationship,
+    RELATIONSHIP_CATEGORIES,
+    # KG Core
+    KGNode,
+    KGEdge,
+    Cluster,
+    EnhancedKG,
+    # Visualization
+    KGVisualizer,
+    DEFAULT_NODE_COLORS,
+    DEFAULT_EDGE_COLORS,
+    # Community Report
+    CommunityReport,
+    CommunityReportGenerator,
+)
+
 # Chunking
 from .chunking import (
     ChunkingStrategy,
@@ -77,8 +131,32 @@ __all__ = [
     "extract_typed",
     "extract_triples",
     "KGExtractor",
-    # Graph
+    # Graph (Legacy)
     "KG",
+    # Graph Module (Person 2)
+    # Schema Generator
+    "PropertyDefinition",
+    "EntityClassDefinition",
+    "DatasetAgnosticSchemaGenerator",
+    "create_default_schema",
+    # Relationship Model
+    "RelationshipType",
+    "EnrichedRelationship",
+    "RelationshipTypeClassifier",
+    "create_enriched_relationship",
+    "RELATIONSHIP_CATEGORIES",
+    # KG Core
+    "KGNode",
+    "KGEdge",
+    "Cluster",
+    "EnhancedKG",
+    # Visualization
+    "KGVisualizer",
+    "DEFAULT_NODE_COLORS",
+    "DEFAULT_EDGE_COLORS",
+    # Community Report
+    "CommunityReport",
+    "CommunityReportGenerator",
     # Chunking
     "ChunkingStrategy",
     "TokenBasedChunker",
