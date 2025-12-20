@@ -41,33 +41,6 @@ from .graph import (
     CommunityReportGenerator,
 )
 
-# Graph Module (Person 2 - Schema, KG, Visualization, Reports)
-from .graph import (
-    # Schema Generator
-    PropertyDefinition,
-    EntityClassDefinition,
-    DatasetAgnosticSchemaGenerator,
-    create_default_schema,
-    # Relationship Model
-    RelationshipType,
-    EnrichedRelationship,
-    RelationshipTypeClassifier,
-    create_enriched_relationship,
-    RELATIONSHIP_CATEGORIES,
-    # KG Core
-    KGNode,
-    KGEdge,
-    Cluster,
-    EnhancedKG,
-    # Visualization
-    KGVisualizer,
-    DEFAULT_NODE_COLORS,
-    DEFAULT_EDGE_COLORS,
-    # Community Report
-    CommunityReport,
-    CommunityReportGenerator,
-)
-
 # Chunking
 from .chunking import (
     ChunkingStrategy,
@@ -114,6 +87,15 @@ from .clustering import (
     create_clustering_algorithm,
     ClusterSummarizer,
     create_summarizer,
+)
+
+# MCP API
+from .mcp_api import (
+    DRGMCPAPI,
+    MCPRequest,
+    MCPResponse,
+    MCPErrorCode,
+    create_mcp_api,
 )
 
 __all__ = [
@@ -190,4 +172,10 @@ __all__ = [
     "create_clustering_algorithm",
     "ClusterSummarizer",
     "create_summarizer",
+    # MCP API
+    "DRGMCPAPI",
+    "MCPRequest",
+    "MCPResponse",
+    "MCPErrorCode",
+    "create_mcp_api",
 ]
