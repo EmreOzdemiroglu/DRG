@@ -225,3 +225,6 @@ class CommunityReportGenerator:
         return "\n".join(lines)
 
 
+
+
+
