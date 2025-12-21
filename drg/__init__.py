@@ -89,6 +89,17 @@ from .clustering import (
     create_summarizer,
 )
 
+# Optimizer
+from .optimizer import (
+    OptimizerConfig,
+    DRGOptimizer,
+    create_optimizer,
+    evaluate_extraction,
+    ExtractionMetrics,
+    calculate_metrics,
+    compare_metrics,
+)
+
 # MCP API
 from .mcp_api import (
     DRGMCPAPI,
@@ -172,6 +183,14 @@ __all__ = [
     "create_clustering_algorithm",
     "ClusterSummarizer",
     "create_summarizer",
+    # Optimizer
+    "OptimizerConfig",
+    "DRGOptimizer",
+    "create_optimizer",
+    "evaluate_extraction",
+    "ExtractionMetrics",
+    "calculate_metrics",
+    "compare_metrics",
     # MCP API
     "DRGMCPAPI",
     "MCPRequest",

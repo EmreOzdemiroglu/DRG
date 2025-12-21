@@ -1,4 +1,4 @@
-# Semantic Retrieval Layer: Dataset-Agnostic RAG Design
+# Semantik Erişim Katmanı: Dataset-Agnostic RAG Tasarımı
 
 ## 1. Genel Bakış
 

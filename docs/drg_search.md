@@ -1,4 +1,4 @@
-# DRG Search Algorithms: GraphRAG Retrieval Design
+# DRG Arama Algoritmaları: GraphRAG Erişim Tasarımı
 
 ## 1. Genel Bakış
 
