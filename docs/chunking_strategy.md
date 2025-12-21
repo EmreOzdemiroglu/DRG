@@ -1,4 +1,4 @@
-# Chunking Strategy: Dataset-Agnostic Text Segmentation
+# Chunking Stratejisi: Dataset-Agnostic Metin Segmentasyonu
 
 ## 1. Genel Bakış
 

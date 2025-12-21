@@ -1,4 +1,4 @@
-# MCP Integration: Agent Interface Design
+# MCP Entegrasyonu: Agent Arayüz Tasarımı
 
 ## Genel Bakış
 

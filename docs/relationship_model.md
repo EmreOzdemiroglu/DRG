@@ -1,162 +1,309 @@
-# Relationship Model - Enriched Relationships
+# İlişki Modeli: Zenginleştirilmiş İlişkiler
 
-## Overview
+## Genel Bakış
 
-The relationship modeling system provides enriched relationship representation compatible with GraphRAG format. It includes a comprehensive taxonomy of relationship types, classification mechanisms, and structured relationship details.
+İlişki modelleme sistemi, GraphRAG formatıyla uyumlu zenginleştirilmiş ilişki temsili sağlar. Kapsamlı bir ilişki tipi taksonomisi, sınıflandırma mekanizmaları ve yapılandırılmış ilişki detaylarını içerir.
 
-## Relationship Structure
+## İlişki Yapısı
 
-### EnrichedRelationship Format
+### Zenginleştirilmiş İlişki Formatı
 
-Each relationship follows this structure:
-- **source**: Source entity identifier
-- **target**: Target entity identifier
-- **relationship_type**: Type from taxonomy
-- **relationship_detail**: Short natural language explanation
-- **confidence**: Confidence score (0.0 to 1.0)
-- **source_ref**: Reference to source (e.g., chunk_id, document_id)
+Her ilişki şu yapıyı takip eder:
+- **source**: Kaynak entity tanımlayıcısı
+- **target**: Hedef entity tanımlayıcısı
+- **relationship_type**: Taksonomiden tip
+- **relationship_detail**: Kısa doğal dil açıklaması
+- **confidence**: Güven skoru (0.0 ile 1.0 arası)
+- **source_ref**: Kaynak referansı (örn. chunk_id, document_id)
 
-### Relationship Detail
+**Örnek:**
+```json
+{
+  "source": "Alice",
+  "target": "Bob",
+  "relationship_type": "influences",
+  "relationship_detail": "Alice, Bob'un karar verme sürecini stratejik tavsiyeleriyle etkiler.",
+  "confidence": 0.85,
+  "source_ref": "chunk_001"
+}
+```
 
-The relationship_detail field contains a short, natural language explanation of the relationship. This provides:
-- **Explainability**: Why this relationship exists
-- **Context**: What the relationship means in the specific domain
-- **Traceability**: Human-readable justification
+### İlişki Detayı
 
-Example: "Alice influences Bob's decision-making process through strategic advice."
+`relationship_detail` alanı, ilişkinin kısa, doğal dil açıklamasını içerir. Bu şunları sağlar:
+- **Açıklanabilirlik**: Bu ilişkinin neden var olduğu
+- **Bağlam**: İlişkinin belirli domain'de ne anlama geldiği
+- **İzlenebilirlik**: İnsan tarafından okunabilir gerekçe
 
-## Relationship Type Taxonomy
+**Örnek:**
+```
+"Alice, Bob'un karar verme sürecini stratejik tavsiyeleriyle etkiler."
+```
 
-### Causal Relationships
-- **causes**: A directly causes B
-- **caused_by**: A is caused by B
-- **triggers**: A triggers B
-- **results_in**: A results in B
+## İlişki Tipi Taksonomisi
 
-### Spatial Relationships
-- **located_at**: A is located at B
-- **contains**: A contains B
-- **near**: A is near B
-- **inside/outside**: Spatial containment
+### Nedensel İlişkiler (Causal Relationships)
 
-### Temporal Relationships
-- **occurs_before**: A occurs before B
-- **occurs_after**: A occurs after B
-- **occurs_during**: A occurs during B
-- **follows**: A follows B
+- **causes**: A doğrudan B'ye neden olur
+- **caused_by**: A, B tarafından neden olunur
+- **triggers**: A, B'yi tetikler
+- **results_in**: A, B ile sonuçlanır
 
-### Social/Interaction Relationships
-- **influences**: A influences B
-- **influenced_by**: A is influenced by B
-- **collaborates_with**: A collaborates with B
-- **works_with**: A works with B
-- **owns**: A owns B
-- **belongs_to**: A belongs to B
-- **member_of**: A is a member of B
+**Örnek:**
+```
+"Yağmur, sel'e neden oldu."
+→ Yağmur causes Sel
+```
 
-### Hierarchical Relationships
-- **parent_of**: A is parent of B
-- **child_of**: A is child of B
-- **part_of**: A is part of B
-- **has_part**: A has part B
+### Mekansal İlişkiler (Spatial Relationships)
 
-### Action Relationships
-- **creates**: A creates B
-- **destroys**: A destroys B
-- **modifies**: A modifies B
-- **produces**: A produces B
-- **consumes**: A consumes B
+- **located_at**: A, B'de konumlanmıştır
+- **contains**: A, B'yi içerir
+- **near**: A, B'ye yakındır
+- **inside/outside**: Mekansal kapsama
 
-### Communication Relationships
-- **communicates_with**: A communicates with B
-- **informs**: A informs B
-- **requests**: A requests from B
-- **responds_to**: A responds to B
+**Örnek:**
+```
+"Paris, Fransa'da konumlanmıştır."
+→ Paris located_at Fransa
+```
 
-### Emotional/Subjective Relationships
-- **likes/dislikes**: A likes/dislikes B
-- **loves/hates**: Strong emotional connection
-- **fears**: A fears B
-- **trusts**: A trusts B
+### Zaman İlişkileri (Temporal Relationships)
 
-And many more domain-agnostic types.
+- **occurs_before**: A, B'den önce gerçekleşir
+- **occurs_after**: A, B'den sonra gerçekleşir
+- **occurs_during**: A, B sırasında gerçekleşir
+- **follows**: A, B'yi takip eder
 
-## Classification System
+**Örnek:**
+```
+"Kahvaltı, öğle yemeğinden önce gelir."
+→ Kahvaltı occurs_before Öğle Yemeği
+```
 
-### Hybrid Classifier Design
+### Sosyal/Etkileşim İlişkileri (Social/Interaction Relationships)
 
-The relationship classification system uses a hybrid approach:
+- **influences**: A, B'yi etkiler
+- **influenced_by**: A, B'den etkilenir
+- **collaborates_with**: A, B ile işbirliği yapar
+- **works_with**: A, B ile çalışır
+- **owns**: A, B'ye sahiptir
+- **belongs_to**: A, B'ye aittir
+- **member_of**: A, B'nin üyesidir
 
-#### Rule-Based Classification
-- Pattern matching on text
-- Type compatibility heuristics
-- Schema constraint checking
-- Fast and deterministic
+**Örnek:**
+```
+"Alice, Bob ile işbirliği yapar."
+→ Alice collaborates_with Bob
+```
 
-#### LLM-Based Classification (Stub)
-- Placeholder for future implementation
-- Will use LLM for complex cases
-- Explanation generation
-- Higher accuracy for ambiguous cases
+### Hiyerarşik İlişkiler (Hierarchical Relationships)
 
-### Classification Process
+- **parent_of**: A, B'nin ebeveynidir
+- **child_of**: A, B'nin çocuğudur
+- **part_of**: A, B'nin parçasıdır
+- **has_part**: A, B parçasına sahiptir
 
-1. **Pattern Matching**: Match raw text against patterns
-2. **Type Heuristics**: Use entity types to infer likely relationships
-3. **Schema Constraints**: Filter by schema-defined valid relationships
-4. **LLM Classification**: (Future) Use LLM for difficult cases
-5. **Confidence Scoring**: Assign confidence based on method used
+**Örnek:**
+```
+"Motor, arabanın parçasıdır."
+→ Motor part_of Araba
+```
 
-## Dataset Independence
+### Aksiyon İlişkileri (Action Relationships)
 
-The relationship model is designed to work across domains:
+- **creates**: A, B'yi oluşturur
+- **destroys**: A, B'yi yok eder
+- **modifies**: A, B'yi değiştirir
+- **produces**: A, B'yi üretir
+- **consumes**: A, B'yi tüketir
 
-- **Taxonomy**: General-purpose relationship types
-- **No Domain Assumptions**: Works with narrative, factual, technical text
-- **Extensible**: New relationship types can be added
-- **Flexible Details**: Relationship_detail adapts to domain
+**Örnek:**
+```
+"Apple, iPhone üretir."
+→ Apple produces iPhone
+```
 
-## Use Cases
+### İletişim İlişkileri (Communication Relationships)
 
-### Narrative Text
-- Character relationships (influences, collaborates_with)
-- Plot relationships (caused_by, triggers)
-- Spatial relationships (located_at, visits)
+- **communicates_with**: A, B ile iletişim kurar
+- **informs**: A, B'yi bilgilendirir
+- **requests**: A, B'den talep eder
+- **responds_to**: A, B'ye yanıt verir
 
-### Factual Text
-- Historical relationships (influences, member_of)
-- Causal relationships (causes, results_in)
-- Temporal relationships (occurs_before, occurs_during)
+**Örnek:**
+```
+"Alice, Bob'u bilgilendirir."
+→ Alice informs Bob
+```
 
-### Technical Documents
-- System relationships (contains, part_of)
-- Process relationships (produces, consumes)
-- Dependency relationships (depends_on, uses)
+### Duygusal/Öznel İlişkiler (Emotional/Subjective Relationships)
 
-## Trade-offs
+- **likes/dislikes**: A, B'yi sever/sevmez
+- **loves/hates**: Güçlü duygusal bağlantı
+- **fears**: A, B'den korkar
+- **trusts**: A, B'ye güvenir
 
-### Advantages
-- Rich taxonomy covers many relationship types
-- Explainable relationships through detail field
-- Hybrid classification balances speed and accuracy
-- Dataset-agnostic design
+**Örnek:**
+```
+"Alice, Bob'u sever."
+→ Alice loves Bob
+```
 
-### Limitations
-- Taxonomy may not cover all domain-specific relationships
-- Rule-based classification has limited accuracy
-- LLM-based classification not yet implemented
-- Relationship_detail generation requires external logic
+Ve daha birçok domain-agnostic tip.
 
-## Future Enhancements
+## Sınıflandırma Sistemi
 
-Potential improvements:
-- Implement LLM-based classification
-- Automatic relationship_detail generation
-- Domain-specific taxonomy extensions
-- Relationship confidence calibration
-- Relationship validation rules
+### Hibrit Sınıflandırıcı Tasarımı
 
+İlişki sınıflandırma sistemi hibrit bir yaklaşım kullanır:
 
+#### Kural Tabanlı Sınıflandırma
 
+- Metin üzerinde pattern eşleştirme
+- Tip uyumluluğu sezgileri
+- Schema kısıt kontrolü
+- Hızlı ve deterministik
 
+**Avantajlar:**
+- Hızlı işlem
+- Deterministik sonuçlar
+- Düşük maliyet
 
+**Sınırlamalar:**
+- Karmaşık durumlar için sınırlı doğruluk
+- Pattern'ler manuel olarak tanımlanmalı
+
+#### LLM Tabanlı Sınıflandırma (Gelecek)
+
+- Karmaşık durumlar için LLM kullanımı
+- Açıklama üretimi
+- Belirsiz durumlar için daha yüksek doğruluk
+
+**Avantajlar:**
+- Yüksek doğruluk
+- Karmaşık pattern'leri yakalama
+- Otomatik açıklama üretimi
+
+**Sınırlamalar:**
+- Yavaş (API çağrıları)
+- Yüksek maliyet
+- Henüz implement edilmedi
+
+### Sınıflandırma Süreci
+
+1. **Pattern Eşleştirme**: Ham metni pattern'lere karşı eşleştir
+2. **Tip Sezgileri**: Entity tiplerini kullanarak olası ilişkileri çıkar
+3. **Schema Kısıtları**: Schema ile tanımlı geçerli ilişkileri filtrele
+4. **LLM Sınıflandırma**: (Gelecek) Zor durumlar için LLM kullan
+5. **Güven Skorlama**: Kullanılan yönteme göre güven skoru ata
+
+**Örnek Süreç:**
+```
+Metin: "Alice, Bob'a tavsiye verdi."
+1. Pattern eşleştirme: "tavsiye verdi" → informs pattern'i bulundu
+2. Tip sezgileri: Person → Person ilişkisi geçerli
+3. Schema kısıtları: informs ilişkisi schema'da tanımlı
+4. Sonuç: Alice informs Bob (confidence: 0.9)
+```
+
+## Dataset Bağımsızlığı
+
+İlişki modeli, domain'ler arası çalışacak şekilde tasarlanmıştır:
+
+- **Taksonomi**: Genel amaçlı ilişki tipleri
+- **Domain Varsayımı Yok**: Hikaye, gerçekçi, teknik metinlerle çalışır
+- **Genişletilebilir**: Yeni ilişki tipleri eklenebilir
+- **Esnek Detaylar**: `relationship_detail` domain'e uyum sağlar
+
+## Kullanım Senaryoları
+
+### Hikaye Metinleri
+
+- **Karakter ilişkileri**: influences, collaborates_with
+- **Hikaye ilişkileri**: caused_by, triggers
+- **Mekansal ilişkiler**: located_at, visits
+
+**Örnek:**
+```
+"Alice, Bob'u etkiledi ve birlikte çalıştılar."
+→ Alice influences Bob
+→ Alice collaborates_with Bob
+```
+
+### Gerçekçi Metinler
+
+- **Tarihi ilişkiler**: influences, member_of
+- **Nedensel ilişkiler**: causes, results_in
+- **Zaman ilişkileri**: occurs_before, occurs_during
+
+**Örnek:**
+```
+"Einstein, 1905'te özel görelilik teorisini geliştirdi."
+→ Einstein occurs_during 1905
+→ Einstein creates Özel Görelilik Teorisi
+```
+
+### Teknik Dokümanlar
+
+- **Sistem ilişkileri**: contains, part_of
+- **Süreç ilişkileri**: produces, consumes
+- **Bağımlılık ilişkileri**: depends_on, uses
+
+**Örnek:**
+```
+"Sistem, veritabanından veri çeker ve API'ye gönderir."
+→ Sistem consumes Veritabanı
+→ Sistem produces API
+```
+
+## Trade-off'lar
+
+### Avantajlar
+
+- **Zengin Taksonomi**: Birçok ilişki tipini kapsar
+- **Açıklanabilir İlişkiler**: Detay alanı aracılığıyla açıklanabilir ilişkiler
+- **Hibrit Sınıflandırma**: Hız ve doğruluk dengesi
+- **Dataset-Agnostic Tasarım**: Farklı domain'lerle uyumlu
+
+### Sınırlamalar
+
+- **Domain-Specific İlişkiler**: Taksonomi tüm domain-specific ilişkileri kapsamayabilir
+- **Kural Tabanlı Sınırlamalar**: Kural tabanlı sınıflandırma sınırlı doğruluğa sahip
+- **LLM Implementasyonu**: LLM tabanlı sınıflandırma henüz implement edilmedi
+- **Detay Üretimi**: `relationship_detail` üretimi harici mantık gerektirir
+
+## Gelecek Geliştirmeler
+
+Potansiyel iyileştirmeler:
+
+1. **LLM Tabanlı Sınıflandırma**: Karmaşık durumlar için LLM implementasyonu
+2. **Otomatik Detay Üretimi**: `relationship_detail` için otomatik üretim
+3. **Domain-Specific Taksonomi**: Domain-specific taksonomi uzantıları
+4. **Güven Kalibrasyonu**: İlişki güven skorlarının kalibrasyonu
+5. **Validasyon Kuralları**: İlişki validasyon kuralları
+6. **Çoklu Dil Desteği**: Çoklu dil ilişki tanımlamaları
+7. **İlişki Öğrenme**: Metinden otomatik ilişki öğrenme
+
+## Best Practices
+
+### İlişki Tanımlama
+
+1. **Açıklayıcı Detaylar**: `relationship_detail` alanı açıklayıcı olmalı
+2. **Uygun Tip Seçimi**: İlişki için en uygun tipi seçin
+3. **Güven Skorlama**: Güven skorlarını doğru atayın
+4. **Kaynak Referansı**: Her ilişki için kaynak referansı sağlayın
+
+### Sınıflandırma
+
+1. **Pattern Kütüphanesi**: Kapsamlı bir pattern kütüphanesi oluşturun
+2. **Tip Uyumluluğu**: Entity tiplerini kullanarak ilişki geçerliliğini kontrol edin
+3. **Schema Kısıtları**: Schema kısıtlarını kullanarak geçersiz ilişkileri filtreleyin
+4. **Güven Eşikleri**: Güven eşiklerini domain'e göre ayarlayın
+
+### İlişki Kalitesi
+
+1. **Doğruluk Kontrolü**: İlişkilerin doğruluğunu kontrol edin
+2. **Tutarlılık**: Benzer ilişkiler için tutarlı tip kullanın
+3. **Açıklanabilirlik**: İlişkilerin açıklanabilir olmasını sağlayın
+4. **İzlenebilirlik**: Her ilişki için kaynak referansı sağlayın

@@ -1,4 +1,4 @@
-# Graph Clustering & Summarization: Community Report Infrastructure
+# Graf Kümeleme ve Özetleme: Topluluk Raporu Altyapısı
 
 ## 1. Genel Bakış
 

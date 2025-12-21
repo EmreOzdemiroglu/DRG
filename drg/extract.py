@@ -4,9 +4,13 @@ Declarative knowledge graph extraction using DSPy.
 Schema'dan dinamik olarak DSPy signature'ları oluşturur - tamamen declarative.
 """
 from typing import List, Tuple, Optional, Union
+import time
+import logging
 import dspy
 
 from .schema import DRGSchema, EnhancedDRGSchema
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_schema(schema: Union[DRGSchema, EnhancedDRGSchema]) -> DRGSchema:
@@ -92,19 +96,72 @@ class KGExtractor(dspy.Module):
         self.entity_extractor = dspy.ChainOfThought(EntitySig)
         self.relation_extractor = dspy.ChainOfThought(RelationSig)
         
-    def forward(self, text: str):
-        """Extract entities and relations - tamamen DSPy ile, manuel parsing yok."""
-        # Step 1: Extract entities
-        entity_result = self.entity_extractor(text=text)
+    def forward(self, text: str, max_retries: int = 3, retry_delay: float = 2.0):
+        """Extract entities and relations - tamamen DSPy ile, manuel parsing yok.
+        
+        Args:
+            text: Input text to extract from
+            max_retries: Maximum number of retries on rate limit errors
+            retry_delay: Delay between retries in seconds (exponential backoff)
+        
+        Returns:
+            dspy.Prediction with entities and relations
+        """
+        # Step 1: Extract entities with retry logic
+        entity_result = None
+        for attempt in range(max_retries):
+            try:
+                entity_result = self.entity_extractor(text=text)
+                break
+            except Exception as e:
+                error_str = str(e).lower()
+                # Check if it's a rate limit error
+                if "rate limit" in error_str or "429" in error_str or "quota" in error_str:
+                    if attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                        logger.warning(
+                            f"Rate limit hit, retrying in {wait_time:.1f}s "
+                            f"(attempt {attempt + 1}/{max_retries})"
+                        )
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"Rate limit error after {max_retries} attempts")
+                        raise
+                else:
+                    # Not a rate limit error, re-raise immediately
+                    raise
         
         # DSPy otomatik olarak structured output döndürür
         entities = entity_result.entities if hasattr(entity_result, 'entities') else []
         
-        # Step 2: Extract relations (entities'i input olarak ver)
-        relation_result = self.relation_extractor(
-            text=text,
-            entities=entities
-        )
+        # Step 2: Extract relations (entities'i input olarak ver) with retry logic
+        relation_result = None
+        for attempt in range(max_retries):
+            try:
+                relation_result = self.relation_extractor(
+                    text=text,
+                    entities=entities
+                )
+                break
+            except Exception as e:
+                error_str = str(e).lower()
+                # Check if it's a rate limit error
+                if "rate limit" in error_str or "429" in error_str or "quota" in error_str:
+                    if attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                        logger.warning(
+                            f"Rate limit hit during relation extraction, retrying in {wait_time:.1f}s "
+                            f"(attempt {attempt + 1}/{max_retries})"
+                        )
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"Rate limit error after {max_retries} attempts")
+                        raise
+                else:
+                    # Not a rate limit error, re-raise immediately
+                    raise
         
         # DSPy otomatik olarak structured output döndürür
         relations = relation_result.relations if hasattr(relation_result, 'relations') else []
