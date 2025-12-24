@@ -1,0 +1,200 @@
+{
+  "reports": [
+    {
+      "cluster_id": "cluster_1",
+      "summary": "Cluster cluster_1 contains 44 entities primarily of type 'Service' with 48 internal relationships. The most common relationship type is 'offers'.",
+      "top_actors": [
+        {
+          "id": "Apple",
+          "connections": 50
+        },
+        {
+          "id": "artificial intelligence",
+          "connections": 2
+        },
+        {
+          "id": "health technologies",
+          "connections": 2
+        },
+        {
+          "id": "App Store",
+          "connections": 2
+        },
+        {
+          "id": "augmented reality",
+          "connections": 2
+        },
+        {
+          "id": "autonomous systems",
+          "connections": 2
+        },
+        {
+          "id": "MacBook Pro",
+          "connections": 1
+        },
+        {
+          "id": "Apple's retail stores",
+          "connections": 1
+        },
+        {
+          "id": "164,000",
+          "connections": 1
+        },
+        {
+          "id": "AirPods",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "offers",
+          "count": 11
+        },
+        {
+          "type": "produced_by",
+          "count": 8
+        },
+        {
+          "type": "focus_on",
+          "count": 7
+        },
+        {
+          "type": "produces",
+          "count": 7
+        },
+        {
+          "type": "offered_by",
+          "count": 5
+        },
+        {
+          "type": "located_in",
+          "count": 3
+        },
+        {
+          "type": "involved_in",
+          "count": 3
+        },
+        {
+          "type": "employs",
+          "count": 2
+        },
+        {
+          "type": "founded_by",
+          "count": 1
+        },
+        {
+          "type": "market_cap",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Service-centric",
+        "offers networks",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 44,
+        "edge_count": 43,
+        "density": 0.02536997885835095,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_0",
+      "summary": "Cluster cluster_0 contains 7 entities primarily of type 'Person' with 7 internal relationships. The most common relationship type is 'founded_by'.",
+      "top_actors": [
+        {
+          "id": "Apple Inc.",
+          "connections": 7
+        },
+        {
+          "id": "Steve Jobs",
+          "connections": 2
+        },
+        {
+          "id": "iPhone",
+          "connections": 2
+        },
+        {
+          "id": "Tim Cook",
+          "connections": 1
+        },
+        {
+          "id": "Steve Wozniak",
+          "connections": 1
+        },
+        {
+          "id": "Cupertino, California",
+          "connections": 1
+        },
+        {
+          "id": "Ronald Wayne",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "founded_by",
+          "count": 3
+        },
+        {
+          "type": "ceo_of",
+          "count": 2
+        },
+        {
+          "type": "located_in",
+          "count": 1
+        },
+        {
+          "type": "produces",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Person-centric",
+        "founded_by networks",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 7,
+        "edge_count": 6,
+        "density": 0.16666666666666666,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_2",
+      "summary": "Cluster cluster_2 contains 2 entities primarily of type 'Location' with 1 internal relationships. The most common relationship type is 'founded_by'.",
+      "top_actors": [
+        {
+          "id": "Apple Park",
+          "connections": 2
+        },
+        {
+          "id": "Norman Foster",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "founded_by",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Location-centric",
+        "founded_by networks"
+      ],
+      "metadata": {
+        "node_count": 2,
+        "edge_count": 1,
+        "density": 0.5,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    }
+  ],
+  "total_clusters": 3
+}

@@ -26,11 +26,13 @@ class KGNode:
         type: Entity type (e.g., "Person", "Location", "Event")
         properties: Optional dictionary of entity properties
         metadata: Optional metadata (confidence, source_ref, etc.)
+        embedding: Optional embedding vector for semantic similarity (GraphRAG)
     """
     id: str
     type: Optional[str] = None
     properties: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    embedding: Optional[List[float]] = None
     
     def __post_init__(self):
         """Validate node data."""
@@ -47,6 +49,8 @@ class KGNode:
             result["properties"] = self.properties
         if self.metadata:
             result["metadata"] = self.metadata
+        if self.embedding:
+            result["embedding"] = self.embedding
         return result
     
     @classmethod
@@ -57,6 +61,7 @@ class KGNode:
             type=data.get("type"),
             properties=data.get("properties", {}),
             metadata=data.get("metadata", {}),
+            embedding=data.get("embedding"),
         )
 
 
@@ -297,6 +302,33 @@ class EnhancedKG:
             edge = KGEdge.from_enriched_relationship(rel)
             kg.add_edge(edge)
         return kg
+
+    def add_entity_embeddings(
+        self,
+        embedding_provider,
+        entity_texts: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Add embeddings to all nodes in the KG (GraphRAG requirement).
+        
+        Args:
+            embedding_provider: Embedding provider to use
+            entity_texts: Optional dict mapping entity_id to text representation.
+                         If None, uses entity_id as text.
+        """
+        if entity_texts is None:
+            entity_texts = {node_id: node_id for node_id in self.nodes.keys()}
+        
+        # Get all entity texts
+        entity_ids = list(self.nodes.keys())
+        texts = [entity_texts.get(eid, eid) for eid in entity_ids]
+        
+        # Batch embed
+        embeddings = embedding_provider.embed_batch(texts)
+        
+        # Add embeddings to nodes
+        for node_id, embedding in zip(entity_ids, embeddings):
+            if node_id in self.nodes:
+                self.nodes[node_id].embedding = embedding
 
 
 

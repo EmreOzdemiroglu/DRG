@@ -5,13 +5,14 @@ from typing import List, Dict, Any, Optional, Tuple
 from collections import deque
 
 from ..graph import KG
+from ..graph.kg_core import EnhancedKG
 from ..embedding import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
 
 class DRGSearch:
-    """DRG search with graph traversal algorithms."""
+    """DRG search with graph traversal algorithms (GraphRAG-compatible)."""
     
     def __init__(
         self,
@@ -21,11 +22,13 @@ class DRGSearch:
         """Initialize DRG search.
         
         Args:
-            knowledge_graph: Knowledge graph to search
-            embedding_provider: Embedding provider for semantic similarity
+            knowledge_graph: Knowledge graph to search (can be KG or EnhancedKG)
+            embedding_provider: Embedding provider for semantic similarity (seed entity matching)
         """
         self.kg = knowledge_graph
         self.embedding_provider = embedding_provider
+        # Check if it's EnhancedKG
+        self.is_enhanced = isinstance(knowledge_graph, EnhancedKG)
     
     def bfs_search(
         self,
@@ -49,9 +52,14 @@ class DRGSearch:
         
         # Initialize queue with seed entities
         for entity in seed_entities:
-            if entity in self.kg.nodes:
-                queue.append((entity, 0))  # (entity, hop_count)
-                visited.add(entity)
+            if self.is_enhanced:
+                if self.kg.get_node(entity) is not None:
+                    queue.append((entity, 0))
+                    visited.add(entity)
+            else:
+                if entity in self.kg.nodes:
+                    queue.append((entity, 0))
+                    visited.add(entity)
         
         while queue and len(results) < max_nodes:
             current_entity, hop_count = queue.popleft()
@@ -60,7 +68,12 @@ class DRGSearch:
                 continue
             
             # Add to results
-            node_data = self.kg.nodes.get(current_entity, {})
+            if self.is_enhanced:
+                node = self.kg.get_node(current_entity)
+                node_data = node.to_dict() if node else {}
+            else:
+                node_data = self.kg.nodes.get(current_entity, {})
+            
             results.append({
                 "entity": current_entity,
                 "hop_count": hop_count,
@@ -110,13 +123,23 @@ class DRGSearch:
             
             visited.add(entity)
             
-            if entity not in self.kg.nodes:
-                return
+            # Check if entity exists
+            if self.is_enhanced:
+                node = self.kg.get_node(entity)
+                if node is None:
+                    return
+            else:
+                if entity not in self.kg.nodes:
+                    return
             
             # Check semantic similarity if query embedding provided
             if query_embedding:
-                node_data = self.kg.nodes.get(entity, {})
-                node_embedding = node_data.get("embedding")
+                if self.is_enhanced:
+                    node = self.kg.get_node(entity)
+                    node_embedding = node.embedding if node else None
+                else:
+                    node_data = self.kg.nodes.get(entity, {})
+                    node_embedding = node_data.get("embedding")
                 
                 if node_embedding:
                     similarity = self._cosine_similarity(query_embedding, node_embedding)
@@ -129,7 +152,12 @@ class DRGSearch:
                         return
             
             # Add to results
-            node_data = self.kg.nodes.get(entity, {})
+            if self.is_enhanced:
+                node = self.kg.get_node(entity)
+                node_data = node.to_dict() if node else {}
+            else:
+                node_data = self.kg.nodes.get(entity, {})
+            
             results.append({
                 "entity": entity,
                 "depth": depth,
@@ -150,8 +178,13 @@ class DRGSearch:
             if query_embedding:
                 neighbor_scores = []
                 for neighbor_entity, relation in neighbors:
-                    neighbor_data = self.kg.nodes.get(neighbor_entity, {})
-                    neighbor_embedding = neighbor_data.get("embedding")
+                    if self.is_enhanced:
+                        neighbor_node = self.kg.get_node(neighbor_entity)
+                        neighbor_embedding = neighbor_node.embedding if neighbor_node else None
+                    else:
+                        neighbor_data = self.kg.nodes.get(neighbor_entity, {})
+                        neighbor_embedding = neighbor_data.get("embedding")
+                    
                     if neighbor_embedding:
                         score = self._cosine_similarity(query_embedding, neighbor_embedding)
                         neighbor_scores.append((score, neighbor_entity, relation))
@@ -182,11 +215,11 @@ class DRGSearch:
         alpha: float = 0.7,  # Weight for semantic similarity
         beta: float = 0.3,   # Weight for graph proximity
     ) -> List[Dict[str, Any]]:
-        """Weighted search combining semantic similarity and graph distance.
+        """Weighted search combining semantic similarity and graph distance (GraphRAG-compatible).
         
         Args:
             query: Query text
-            seed_entities: Optional seed entities (extracted from query if not provided)
+            seed_entities: Optional seed entities (found via embedding matching if not provided)
             max_hops: Maximum graph hops
             k: Number of results to return
             alpha: Weight for semantic similarity (0-1)
@@ -198,9 +231,14 @@ class DRGSearch:
         # Embed query
         query_embedding = self.embedding_provider.embed(query)
         
-        # Extract seed entities if not provided
+        # Extract seed entities if not provided (GraphRAG: match entity embeddings)
         if seed_entities is None:
-            seed_entities = self._extract_entities_from_query(query)
+            if self.is_enhanced:
+                # Use embedding-based seed entity finding (GraphRAG approach)
+                seed_entities = self._find_seed_entities_by_embedding(query_embedding, k=5)
+            else:
+                # Fallback to text-based extraction
+                seed_entities = self._extract_entities_from_query(query)
         
         # BFS to get candidate nodes
         candidate_nodes = self.bfs_search(seed_entities, max_hops=max_hops)
@@ -212,13 +250,17 @@ class DRGSearch:
             hop_count = node["hop_count"]
             
             # Get node embedding if available
-            node_data = self.kg.nodes.get(entity, {})
-            node_embedding = node_data.get("embedding")
+            if self.is_enhanced:
+                node = self.kg.get_node(entity)
+                node_embedding = node.embedding if node else None
+            else:
+                node_data = self.kg.nodes.get(entity, {})
+                node_embedding = node_data.get("embedding")
             
             # Calculate semantic similarity
             semantic_score = 0.0
             if node_embedding:
-                # Cosine similarity (simplified)
+                # Cosine similarity
                 semantic_score = self._cosine_similarity(query_embedding, node_embedding)
             else:
                 # Fallback: use text similarity if no embedding
@@ -231,7 +273,7 @@ class DRGSearch:
             combined_score = alpha * semantic_score + beta * proximity_score
             
             scored_nodes.append({
-                **node,
+                **node_result,
                 "semantic_score": semantic_score,
                 "proximity_score": proximity_score,
                 "combined_score": combined_score,
@@ -241,8 +283,39 @@ class DRGSearch:
         scored_nodes.sort(key=lambda x: x["combined_score"], reverse=True)
         return scored_nodes[:k]
     
+    def _find_seed_entities_by_embedding(
+        self,
+        query_embedding: List[float],
+        k: int = 5,
+        similarity_threshold: float = 0.5,
+    ) -> List[str]:
+        """Find seed entities by matching query embedding with entity embeddings (GraphRAG).
+        
+        Args:
+            query_embedding: Query embedding vector
+            k: Maximum number of entities to return
+            similarity_threshold: Minimum similarity threshold
+        
+        Returns:
+            List of entity IDs sorted by similarity
+        """
+        if not self.is_enhanced:
+            return []
+        
+        entity_scores = []
+        for node_id, node in self.kg.nodes.items():
+            if node.embedding is None:
+                continue
+            
+            similarity = self._cosine_similarity(query_embedding, node.embedding)
+            if similarity >= similarity_threshold:
+                entity_scores.append((node_id, similarity))
+        
+        entity_scores.sort(key=lambda x: x[1], reverse=True)
+        return [entity_id for entity_id, _ in entity_scores[:k]]
+    
     def _extract_entities_from_query(self, query: str) -> List[str]:
-        """Extract potential entities from query (simplified).
+        """Extract potential entities from query (simplified fallback).
         
         Args:
             query: Query text

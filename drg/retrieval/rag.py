@@ -117,21 +117,23 @@ class RAGRetriever:
         if not self.knowledge_graph:
             return None, [], []
         
-        # Extract entities from chunks
-        entities = set()
-        for chunk in chunks:
-            # Try to get entities from metadata
-            chunk_entities = chunk.get("metadata", {}).get("semantic_tags", {}).get("entities", [])
-            if isinstance(chunk_entities, list):
-                entities.update(chunk_entities)
-            
-            # Also try to extract from chunk_id if it contains entity info
-            # This is a simplified approach - in production, entities should be
-            # properly extracted and stored in metadata
+        # Get all entity names from KG
+        kg_entity_names = set(self.knowledge_graph.nodes.keys())
         
-        entities = list(entities)
+        # Extract entities from chunks by matching KG entity names in chunk text
+        found_entities = set()
+        chunk_texts = [chunk.get("text", "") for chunk in chunks]
         
-        # Build subgraph from entities
+        for entity_name in kg_entity_names:
+            # Check if entity appears in any chunk text
+            for chunk_text in chunk_texts:
+                if entity_name.lower() in chunk_text.lower():
+                    found_entities.add(entity_name)
+                    break
+        
+        entities = list(found_entities)
+        
+        # Build subgraph from found entities
         kg_subgraph = {
             "nodes": [],
             "edges": [],
@@ -153,16 +155,19 @@ class RAGRetriever:
                 for edge in self.knowledge_graph.edges:
                     source, relation, target = edge
                     if source == entity or target == entity:
-                        kg_subgraph["edges"].append({
-                            "source": source,
-                            "relation": relation,
-                            "target": target,
-                        })
-                        relationships.append({
-                            "source": source,
-                            "relation": relation,
-                            "target": target,
-                        })
+                        # Avoid duplicates
+                        edge_key = (source, relation, target)
+                        if edge_key not in [(r["source"], r["relation"], r["target"]) for r in relationships]:
+                            kg_subgraph["edges"].append({
+                                "source": source,
+                                "relation": relation,
+                                "target": target,
+                            })
+                            relationships.append({
+                                "source": source,
+                                "relation": relation,
+                                "target": target,
+                            })
         
         return kg_subgraph, entities, relationships
     

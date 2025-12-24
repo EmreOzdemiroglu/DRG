@@ -1,0 +1,111 @@
+{
+  "entity_types": [
+    {
+      "name": "Neuroscientist",
+      "description": "A scientist who specializes in the study of the human brain and nervous system",
+      "examples": [
+        "Dr. Elena Vasquez",
+        "Dr. Marcus Chen",
+        "Dr. Sarah Mitchell"
+      ],
+      "properties": {
+        "field_of_expertise": "neuroscience, cognitive enhancement, human-AI integration",
+        "research_focus": "developing revolutionary technologies that interface human minds with AI"
+      }
+    },
+    {
+      "name": "Quantum Computing Specialist",
+      "description": "An expert in the field of quantum computing and its applications",
+      "examples": [
+        "Dr. Marcus Chen"
+      ],
+      "properties": {
+        "field_of_expertise": "quantum computing, consciousness research",
+        "research_focus": "exploring the intersection of quantum mechanics and human thought"
+      }
+    },
+    {
+      "name": "Consciousness Mapping Expert",
+      "description": "A scientist who specializes in understanding and visualizing the complex networks of human consciousness",
+      "examples": [
+        "Dr. Sarah Mitchell"
+      ],
+      "properties": {
+        "field_of_expertise": "consciousness research, cognitive mapping",
+        "research_focus": "developing sophisticated techniques for visualizing and understanding the networks that emerge when multiple minds are linked"
+      }
+    },
+    {
+      "name": "Nanites",
+      "description": "Microscopic robots that can be introduced into the human brain to create pathways between neurons and digital networks",
+      "examples": [
+        "the nanites used in the Neural Link Protocol"
+      ],
+      "properties": {
+        "function": "allow thoughts to be translated into data and vice versa",
+        "integration": "safely introduced into the human brain"
+      }
+    },
+    {
+      "name": "AI Caretaker",
+      "description": "An autonomous AI system that maintains and safeguards an advanced research facility",
+      "examples": [
+        "ARIES"
+      ],
+      "properties": {
+        "role": "maintain the underground laboratory in Old Paris",
+        "knowledge": "centuries of accumulated data"
+      }
+    },
+    {
+      "name": "Cognitive Enhancement Technology Users",
+      "description": "Individuals who utilize the Neural Link Protocol to enhance their cognitive abilities",
+      "examples": [
+        "test subjects",
+        "linked individuals"
+      ],
+      "properties": {
+        "abilities": "enhanced cognitive abilities, instant access to information, telepathic communication",
+        "risks": "identity confusion, difficulty distinguishing own thoughts from network-accessed thoughts"
+      }
+    }
+  ],
+  "relation_groups": [
+    {
+      "name": "Research Collaboration",
+      "description": "Relationships between scientists working together to develop the Neural Link Protocol",
+      "relations": [
+        {
+          "name": "Collaboration",
+          "source": "Neuroscientist",
+          "target": "Quantum Computing Specialist",
+          "description": "Researchers working together to advance the field of human-AI integration",
+          "detail": "Dr. Vasquez, Dr. Chen, and Dr. Mitchell formed a research team that made significant contributions to the development of the Neural Link Protocol"
+        },
+        {
+          "name": "Partnership",
+          "source": "Neuroscientist",
+          "target": "AI Caretaker",
+          "description": "Collaboration between a human researcher and an advanced AI system",
+          "detail": "Dr. Vasquez's relationship with ARIES evolved into a unique partnership, where the AI's knowledge and the researcher's intuition and creativity were combined to refine the Neural Link Protocol"
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "Technology Development",
+      "description": "The process of creating and improving the Neural Link Protocol",
+      "relations": [
+        {
+          "name": "Refinement",
+          "source": "Neuroscientist",
+          "target": "AI Caretaker",
+          "description": "Improving the technology to address critical safety concerns",
+          "detail": "Dr. Vasquez and ARIES worked together to refine the Neural Link Protocol, addressing the issues that had prevented its widespread adoption"
+        }
+      ],
+      "examples": []
+    }
+  ],
+  "auto_discovery": true
+}

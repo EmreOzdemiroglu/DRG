@@ -1,0 +1,178 @@
+{
+  "entity_types": [
+    {
+      "name": "Company",
+      "description": "The electric vehicle and clean energy company Tesla Inc.",
+      "examples": [
+        "Tesla Inc.",
+        "Tesla"
+      ],
+      "properties": {
+        "founded": 2003,
+        "headquarters": "Austin, Texas",
+        "mission": "To accelerate the world's transition to sustainable energy",
+        "leadership": "Elon Musk (CEO)"
+      }
+    },
+    {
+      "name": "Vehicle",
+      "description": "Tesla's electric vehicle models",
+      "examples": [
+        "Tesla Roadster",
+        "Model S",
+        "Model X",
+        "Model 3",
+        "Model Y"
+      ],
+      "properties": {
+        "type": [
+          "sports car",
+          "luxury sedan",
+          "SUV",
+          "compact SUV"
+        ],
+        "performance": [
+          "high-performance",
+          "high-range",
+          "advanced autonomous driving capabilities"
+        ],
+        "features": [
+          "large touchscreen display",
+          "falcon-wing doors",
+          "seating capacity up to 7"
+        ]
+      }
+    },
+    {
+      "name": "Technology",
+      "description": "Tesla's technological innovations and systems",
+      "examples": [
+        "Autopilot",
+        "Full Self-Driving (FSD)",
+        "Supercharger network",
+        "Powerwall"
+      ],
+      "properties": {
+        "purpose": [
+          "autonomous driving",
+          "energy storage",
+          "fast charging"
+        ],
+        "impact": [
+          "improving vehicle performance and safety",
+          "supporting EV adoption"
+        ]
+      }
+    },
+    {
+      "name": "Manufacturing",
+      "description": "Tesla's production facilities and processes",
+      "examples": [
+        "Gigafactories",
+        "renewable energy integration"
+      ],
+      "properties": {
+        "goal": "net-zero energy facilities",
+        "approach": "using renewable energy sources"
+      }
+    },
+    {
+      "name": "Industry",
+      "description": "The automotive and energy industries impacted by Tesla",
+      "examples": [
+        "automotive industry",
+        "energy industry"
+      ],
+      "properties": {
+        "change": "accelerating the transition to electric vehicles and sustainable energy"
+      }
+    }
+  ],
+  "relation_groups": [
+    {
+      "name": "Company History",
+      "description": "The founding and evolution of Tesla Inc.",
+      "relations": [
+        {
+          "name": "Founded",
+          "source": "Company",
+          "target": "Company",
+          "description": "Tesla Inc. was founded in 2003 by engineers Martin Eberhard and Marc Tarpenning",
+          "detail": "The company was named after inventor Nikola Tesla and is headquartered in Austin, Texas."
+        },
+        {
+          "name": "Leadership",
+          "source": "Company",
+          "target": "Company",
+          "description": "Elon Musk joined Tesla in 2004 as chairman and became CEO in 2008, leading the company through its most transformative period",
+          "detail": "Musk's vision, risk-taking, and ability to attract talent have been crucial to Tesla's success."
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "Product Development",
+      "description": "Tesla's electric vehicle lineup and technological innovations",
+      "relations": [
+        {
+          "name": "Introduced",
+          "source": "Company",
+          "target": "Vehicle",
+          "description": "Tesla introduced various electric vehicle models over time",
+          "detail": "The Tesla Roadster (2008), Model S (2012), Model X (2015), Model 3 (2017), and Model Y (2020) were launched to address different vehicle segments."
+        },
+        {
+          "name": "Technological Innovations",
+          "source": "Company",
+          "target": "Technology",
+          "description": "Tesla has developed advanced technologies to improve its vehicles and support EV adoption",
+          "detail": "This includes the Autopilot system, Full Self-Driving capabilities, the Supercharger network, and the Powerwall energy storage system."
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "Manufacturing and Sustainability",
+      "description": "Tesla's approach to manufacturing and environmental impact",
+      "relations": [
+        {
+          "name": "Sustainable Manufacturing",
+          "source": "Company",
+          "target": "Manufacturing",
+          "description": "Tesla aims to use renewable energy for its manufacturing operations",
+          "detail": "The company's Gigafactories are designed to be net-zero energy facilities, incorporating solar panels and other renewable energy sources."
+        },
+        {
+          "name": "Environmental Impact",
+          "source": "Company",
+          "target": "Industry",
+          "description": "Tesla's electric vehicles and sustainable energy products have a positive impact on the environment",
+          "detail": "By producing electric vehicles, Tesla has helped reduce greenhouse gas emissions from transportation, one of the largest sources of global emissions."
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "Industry Transformation",
+      "description": "Tesla's influence on the automotive and energy industries",
+      "relations": [
+        {
+          "name": "Industry Disruption",
+          "source": "Company",
+          "target": "Industry",
+          "description": "Tesla has accelerated the transition to electric vehicles and sustainable energy",
+          "detail": "The company's success has demonstrated that electric vehicles can be desirable, high-performance, and profitable, fundamentally changing the trajectory of the automotive industry."
+        },
+        {
+          "name": "Inspiring Innovation",
+          "source": "Company",
+          "target": "Industry",
+          "description": "Tesla has inspired numerous startups and established companies to invest in electric vehicles and clean energy technologies",
+          "detail": "The company has demonstrated that sustainable technology can be both profitable and transformative, creating a new paradigm for the automotive and energy industries."
+        }
+      ],
+      "examples": []
+    }
+  ],
+  "auto_discovery": true
+}

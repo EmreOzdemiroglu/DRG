@@ -5,6 +5,7 @@ from .strategies import (
     TokenBasedChunker,
     SentenceBasedChunker,
     create_chunker,
+    CHUNKING_PRESETS,
 )
 from .validators import ChunkValidator, validate_chunks
 
@@ -13,6 +14,7 @@ __all__ = [
     "TokenBasedChunker",
     "SentenceBasedChunker",
     "create_chunker",
+    "CHUNKING_PRESETS",
     "ChunkValidator",
     "validate_chunks",
 ]

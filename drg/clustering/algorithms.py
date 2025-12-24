@@ -56,22 +56,65 @@ class LouvainClustering(ClusteringAlgorithm):
         self.random_state = random_state
     
     def cluster(self, graph) -> List[Cluster]:
-        """Cluster graph using Louvain algorithm."""
+        """Cluster graph using Louvain algorithm.
+        
+        Supports both EnhancedKG and NetworkX graphs.
+        """
         import networkx as nx
         
-        # Convert KG to NetworkX graph
-        G = nx.Graph()
-        
-        # Add nodes
-        for node_id, node_data in graph.nodes.items():
-            G.add_node(node_id, **node_data)
-        
-        # Add edges with weights
-        for source, relation, target in graph.edges:
-            if G.has_edge(source, target):
-                G[source][target]['weight'] = G[source][target].get('weight', 0) + 1
+        # Check if graph is already a NetworkX graph
+        if isinstance(graph, nx.Graph):
+            G = graph
+            # Extract edges from NetworkX graph for cluster edge assignment
+            original_edges = []
+            for source, target in G.edges():
+                relation = G[source][target].get('relation', 'related')
+                original_edges.append((source, relation, target))
+        else:
+            # Convert KG to NetworkX graph
+            G = nx.Graph()
+            
+            # Add nodes
+            if hasattr(graph, 'nodes') and isinstance(graph.nodes, dict):
+                # EnhancedKG format
+                for node_id, node_data in graph.nodes.items():
+                    if isinstance(node_data, dict):
+                        G.add_node(node_id, **node_data)
+                    else:
+                        G.add_node(node_id)
             else:
-                G.add_edge(source, target, relation=relation, weight=1.0)
+                # Fallback: assume graph has iterable nodes
+                for node_id in graph.nodes:
+                    G.add_node(node_id)
+            
+            # Extract edges for later use
+            original_edges = []
+            
+            # Add edges with weights
+            if hasattr(graph, 'edges'):
+                # EnhancedKG format: edges is List[KGEdge]
+                for edge in graph.edges:
+                    if hasattr(edge, 'source') and hasattr(edge, 'target'):
+                        # KGEdge object
+                        source = edge.source
+                        target = edge.target
+                        relation = getattr(edge, 'relationship_type', 'related')
+                    else:
+                        # Tuple format (source, relation, target) or (source, target)
+                        if len(edge) == 3:
+                            source, relation, target = edge
+                        elif len(edge) == 2:
+                            source, target = edge
+                            relation = 'related'
+                        else:
+                            continue
+                    
+                    original_edges.append((source, relation, target))
+                    
+                    if G.has_edge(source, target):
+                        G[source][target]['weight'] = G[source][target].get('weight', 0) + 1
+                    else:
+                        G.add_edge(source, target, relation=relation, weight=1.0)
         
         # Run Louvain algorithm
         if self.random_state is not None:
@@ -95,7 +138,7 @@ class LouvainClustering(ClusteringAlgorithm):
             clusters[cluster_id]["nodes"].append(node)
         
         # Add edges to clusters
-        for source, relation, target in graph.edges:
+        for source, relation, target in original_edges:
             source_cluster = partition.get(source)
             target_cluster = partition.get(target)
             if source_cluster == target_cluster and source_cluster is not None:

@@ -213,8 +213,9 @@ drg_skeleton/
 │   ├── graph.py         # Knowledge Graph sınıfı
 │   └── cli.py           # Komut satırı arayüzü
 ├── examples/
-│   ├── simple_example.py           # Basit kullanım örneği
-│   └── enhanced_schema_example.py  # Gelişmiş şema örneği
+│   ├── graphrag_pipeline_example.py  # Ana GraphRAG pipeline örneği
+│   ├── mcp_demo.py                   # MCP API demo
+│   └── optimizer_demo.py             # Optimizer demo
 ├── tests/
 │   └── test_basic.py    # Temel testler
 ├── outputs/             # Çıktı dosyaları
@@ -229,15 +230,16 @@ drg_skeleton/
 pytest tests/
 
 # API key olmadan sadece yapı testleri
-python examples/simple_example.py
+python examples/graphrag_pipeline_example.py example1
 ```
 
 ## 💡 Örnekler
 
 Detaylı örnekler için `examples/` dizinindeki dosyalara bakın:
 
-- `simple_example.py`: Basit şema ile entity ve relation extraction
-- `enhanced_schema_example.py`: Gelişmiş şema özellikleri ile kullanım
+- `graphrag_pipeline_example.py`: Tam GraphRAG pipeline (chunking, KG extraction, embedding, retrieval)
+- `mcp_demo.py`: MCP API interface demo
+- `optimizer_demo.py`: DSPy optimizer demo
 
 ## 🔍 Desteklenen Modeller
 
