@@ -11,7 +11,7 @@ from .schema import (
     RelationGroup,
     EnhancedDRGSchema,
 )
-from .extract import extract_typed, extract_triples, KGExtractor
+from .extract import extract_typed, extract_triples, KGExtractor, generate_schema_from_text
 from .graph import KG
 
 # Graph Module (Person 2 - Schema, KG, Visualization, Reports)
@@ -73,9 +73,13 @@ from .vector_store import (
 from .retrieval import (
     RAGRetriever,
     create_rag_retriever,
+    RetrievalContext,
     DRGSearch,
     create_drg_search,
     HybridRetriever,
+    GraphRAGRetriever,
+    create_graphrag_retriever,
+    GraphRAGRetrievalContext,
 )
 
 # Clustering
@@ -124,6 +128,7 @@ __all__ = [
     "extract_typed",
     "extract_triples",
     "KGExtractor",
+    "generate_schema_from_text",
     # Graph (Legacy)
     "KG",
     # Graph Module (Person 2)
@@ -172,9 +177,13 @@ __all__ = [
     # Retrieval
     "RAGRetriever",
     "create_rag_retriever",
+    "RetrievalContext",
     "DRGSearch",
     "create_drg_search",
     "HybridRetriever",
+    "GraphRAGRetriever",
+    "create_graphrag_retriever",
+    "GraphRAGRetrievalContext",
     # Clustering
     "ClusteringAlgorithm",
     "LouvainClustering",

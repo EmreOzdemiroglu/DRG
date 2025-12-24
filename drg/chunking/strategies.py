@@ -503,27 +503,102 @@ class SentenceBasedChunker(ChunkingStrategy):
         return chunks
 
 
+# Chunking presets for declarative usage
+CHUNKING_PRESETS = {
+    "small": {
+        "strategy": "token_based",
+        "chunk_size": 256,
+        "overlap_ratio": 0.15,
+    },
+    "medium": {
+        "strategy": "token_based",
+        "chunk_size": 512,
+        "overlap_ratio": 0.15,
+    },
+    "large": {
+        "strategy": "token_based",
+        "chunk_size": 768,
+        "overlap_ratio": 0.15,
+    },
+    "xlarge": {
+        "strategy": "token_based",
+        "chunk_size": 1024,
+        "overlap_ratio": 0.15,
+    },
+    "graphrag": {
+        "strategy": "token_based",
+        "chunk_size": 200,
+        "overlap_ratio": 0.15,
+    },
+    "rag": {
+        "strategy": "token_based",
+        "chunk_size": 512,
+        "overlap_ratio": 0.20,
+    },
+    "sentence": {
+        "strategy": "sentence_based",
+        "chunk_size": 512,
+        "overlap_sentences": 2,
+    },
+}
+
+
 def create_chunker(
     strategy: str = "token_based",
     tokenizer: Optional[Tokenizer] = None,
-    chunk_size: int = 768,
-    overlap_ratio: float = 0.15,
+    chunk_size: Optional[int] = None,
+    overlap_ratio: Optional[float] = None,
+    preset: Optional[str] = None,
     **kwargs
 ) -> ChunkingStrategy:
-    """Factory function to create chunker.
+    """Factory function to create chunker - declarative interface.
+    
+    Can be used in two ways:
+    1. Preset-based (declarative): create_chunker(preset="graphrag")
+    2. Parameter-based (low-level): create_chunker(strategy="token_based", chunk_size=200)
     
     Args:
+        preset: Chunking preset name ("small", "medium", "large", "graphrag", "rag", "sentence")
+               If preset is provided, it overrides strategy/chunk_size/overlap_ratio
         strategy: Chunking strategy ("token_based" or "sentence_based")
+                 Only used if preset is not provided
         tokenizer: Tokenizer instance (default: TiktokenTokenizer)
-        chunk_size: Target chunk size in tokens
-        overlap_ratio: Overlap ratio (for token_based)
+        chunk_size: Target chunk size in tokens (default: 768)
+                   Only used if preset is not provided
+        overlap_ratio: Overlap ratio (for token_based, default: 0.15)
+                      Only used if preset is not provided
         **kwargs: Additional strategy-specific parameters
     
     Returns:
         ChunkingStrategy instance
+    
+    Examples:
+        # Declarative (preset-based)
+        chunker = create_chunker(preset="graphrag")
+        
+        # Low-level (parameter-based)
+        chunker = create_chunker(strategy="token_based", chunk_size=200, overlap_ratio=0.15)
     """
+    # If preset is provided, use preset configuration
+    if preset:
+        if preset not in CHUNKING_PRESETS:
+            raise ValueError(
+                f"Unknown preset: {preset}. Available presets: {list(CHUNKING_PRESETS.keys())}"
+            )
+        preset_config = CHUNKING_PRESETS[preset].copy()
+        strategy = preset_config.pop("strategy")
+        chunk_size = preset_config.pop("chunk_size", chunk_size)
+        overlap_ratio = preset_config.pop("overlap_ratio", overlap_ratio)
+        kwargs.update(preset_config)  # Add any remaining preset params
+    
+    # Set defaults if not provided
     if tokenizer is None:
         tokenizer = TiktokenTokenizer()
+    
+    if chunk_size is None:
+        chunk_size = 768
+    if overlap_ratio is None:
+        overlap_ratio = 0.15
     
     if strategy == "token_based":
         return TokenBasedChunker(

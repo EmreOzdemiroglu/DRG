@@ -1,0 +1,307 @@
+{
+  "reports": [
+    {
+      "cluster_id": "cluster_0",
+      "summary": "Cluster cluster_0 contains 5 entities primarily of type 'Neuroscientist' with 4 internal relationships. The most common relationship type is 'Refinement'.",
+      "top_actors": [
+        {
+          "id": "ARIES",
+          "connections": 5
+        },
+        {
+          "id": "Neural Link Protocol",
+          "connections": 3
+        },
+        {
+          "id": "Dr. Sarah Mitchell",
+          "connections": 3
+        },
+        {
+          "id": "Dr. Marcus Chen",
+          "connections": 2
+        },
+        {
+          "id": "Council",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Refinement",
+          "count": 3
+        },
+        {
+          "type": "Misused",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Neuroscientist-centric",
+        "Refinement networks"
+      ],
+      "metadata": {
+        "node_count": 5,
+        "edge_count": 4,
+        "density": 0.2,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_1",
+      "summary": "Cluster cluster_1 contains 2 entities primarily of type 'Cognitive Enhancement Technology Users' with 1 internal relationships. The most common relationship type is 'Collaboration'.",
+      "top_actors": [
+        {
+          "id": "James Morrison",
+          "connections": 2
+        },
+        {
+          "id": "Local Communities",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Collaboration",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Cognitive Enhancement Technology Users-centric",
+        "Collaboration networks"
+      ],
+      "metadata": {
+        "node_count": 2,
+        "edge_count": 1,
+        "density": 0.5,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_2",
+      "summary": "Cluster cluster_2 contains 5 entities primarily of type 'Unknown' with 5 internal relationships. The most common relationship type is 'Uploaded'.",
+      "top_actors": [
+        {
+          "id": "Resistance Network",
+          "connections": 7
+        },
+        {
+          "id": "Alex Rivera",
+          "connections": 3
+        },
+        {
+          "id": "Counter-Protocol",
+          "connections": 2
+        },
+        {
+          "id": "Foundation",
+          "connections": 1
+        },
+        {
+          "id": "Council Headquarters",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Uploaded",
+          "count": 1
+        },
+        {
+          "type": "Led by",
+          "count": 1
+        },
+        {
+          "type": "Collaboration",
+          "count": 1
+        },
+        {
+          "type": "Partnership",
+          "count": 1
+        },
+        {
+          "type": "Infiltrated",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Uploaded networks"
+      ],
+      "metadata": {
+        "node_count": 5,
+        "edge_count": 4,
+        "density": 0.25,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_3",
+      "summary": "Cluster cluster_3 contains 3 entities primarily of type 'Cognitive Enhancement Technology Users' with 2 internal relationships. The most common relationship type is 'Collaboration'.",
+      "top_actors": [
+        {
+          "id": "test subjects",
+          "connections": 3
+        },
+        {
+          "id": "linked individuals",
+          "connections": 1
+        },
+        {
+          "id": "the nanites used in the Neural Link Protocol",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Collaboration",
+          "count": 2
+        }
+      ],
+      "themes": [
+        "Cognitive Enhancement Technology Users-centric",
+        "Collaboration networks"
+      ],
+      "metadata": {
+        "node_count": 3,
+        "edge_count": 2,
+        "density": 0.3333333333333333,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_6",
+      "summary": "Cluster cluster_6 contains 7 entities primarily of type 'Unknown' with 6 internal relationships. The most common relationship type is 'Collaboration'.",
+      "top_actors": [
+        {
+          "id": "Dr. Elena Vasquez",
+          "connections": 18
+        },
+        {
+          "id": "Free Neural Network Foundation",
+          "connections": 1
+        },
+        {
+          "id": "Corporations",
+          "connections": 1
+        },
+        {
+          "id": "nanites",
+          "connections": 1
+        },
+        {
+          "id": "Neural Link Protocol Users",
+          "connections": 1
+        },
+        {
+          "id": "Citizen Groups",
+          "connections": 1
+        },
+        {
+          "id": "Governments",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Collaboration",
+          "count": 4
+        },
+        {
+          "type": "Refinement",
+          "count": 2
+        }
+      ],
+      "themes": [
+        "Collaboration networks",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 7,
+        "edge_count": 6,
+        "density": 0.14285714285714285,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_5",
+      "summary": "Cluster cluster_5 contains 1 entities primarily of type 'Consciousness Mapping Expert' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Consciousness Mapping Expert-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_7",
+      "summary": "Cluster cluster_7 contains 1 entities primarily of type 'Cognitive Enhancement Technology Users' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Cognitive Enhancement Technology Users-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_4",
+      "summary": "Cluster cluster_4 contains 3 entities primarily of type 'Unknown' with 3 internal relationships. The most common relationship type is 'Refinement'.",
+      "top_actors": [
+        {
+          "id": "Neuroscientist",
+          "connections": 3
+        },
+        {
+          "id": "AI Caretaker",
+          "connections": 2
+        },
+        {
+          "id": "Quantum Computing Specialist",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Refinement",
+          "count": 1
+        },
+        {
+          "type": "Partnership",
+          "count": 1
+        },
+        {
+          "type": "Collaboration",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Refinement networks"
+      ],
+      "metadata": {
+        "node_count": 3,
+        "edge_count": 2,
+        "density": 0.5,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    }
+  ],
+  "total_clusters": 8
+}

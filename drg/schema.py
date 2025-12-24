@@ -17,6 +17,8 @@ class Relation:
     name: str
     src: str  # Source entity type name
     dst: str  # Destination entity type name
+    description: str = ""  # Bağlantı sebebi (relationship type açıklaması)
+    detail: str = ""  # Bağlantı detayı (tek cümleyle neden bağlantılı olduğu)
 
 
 @dataclass

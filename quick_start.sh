@@ -49,10 +49,10 @@ fi
 echo ""
 
 # Test çalıştırma
-echo "5️⃣  Basit test çalıştırılıyor..."
-echo "   python3 examples/simple_example.py"
+echo "5️⃣  GraphRAG pipeline test çalıştırılıyor..."
+echo "   python3 examples/graphrag_pipeline_example.py example1"
 echo ""
-python3 examples/simple_example.py
+python3 examples/graphrag_pipeline_example.py example1
 
 echo ""
 echo "✅ Kurulum tamamlandı!"

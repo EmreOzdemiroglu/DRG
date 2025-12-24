@@ -1,0 +1,21 @@
+{
+  "example_name": "example3",
+  "input_files": {
+    "schema": "inputs/example3_schema.json",
+    "text": "inputs/example3_text.txt"
+  },
+  "chunks": 11,
+  "entities": 64,
+  "relations": 81,
+  "kg_nodes": 69,
+  "kg_edges": 81,
+  "embedded_nodes": 69,
+  "clusters": 10,
+  "community_reports": 10,
+  "output_files": {
+    "schema": "outputs/example3_schema.json",
+    "kg": "outputs/example3_kg.json",
+    "summary": "outputs/example3_summary.json",
+    "community_reports": "outputs/example3_community_reports.json"
+  }
+}

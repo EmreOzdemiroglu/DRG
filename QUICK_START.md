@@ -40,7 +40,7 @@ export DRG_MODEL="openai/gpt-4o-mini"
 
 ```bash
 # En basit örnek (API key olmadan da çalışır)
-python examples/simple_example.py
+python examples/graphrag_pipeline_example.py example1
 
 # Veya otomatik script
 ./quick_start.sh
@@ -50,21 +50,21 @@ python examples/simple_example.py
 
 #### Senaryo 1: API Key Olmadan Test
 ```bash
-python examples/simple_example.py
+python examples/graphrag_pipeline_example.py example1
 # Mock data ile schema ve KG yapısını test eder
 ```
 
 #### Senaryo 2: API Key ile Gerçek Extraction
 ```bash
 export GEMINI_API_KEY="your-key"
-python examples/simple_example.py
+python examples/graphrag_pipeline_example.py example1
 # Gerçek LLM extraction yapar
 ```
 
 #### Senaryo 3: Tam Pipeline
 ```bash
 export GEMINI_API_KEY="your-key"
-python examples/pipeline_example.py
+python examples/graphrag_pipeline_example.py example1
 # Chunking + Embedding + RAG + KG extraction
 ```
 
@@ -106,8 +106,7 @@ pip install -e .
 
 Tüm örnekler `examples/` klasöründe:
 
-- `simple_example.py` - En basit kullanım
-- `pipeline_example.py` - Tam pipeline
+- `graphrag_pipeline_example.py` - Ana GraphRAG pipeline
 - `optimizer_demo.py` - Optimizer ile iyileştirme
 - `mcp_demo.py` - MCP API örneği
 
@@ -124,7 +123,7 @@ Kurulum başarılıysa şunu görmelisiniz:
    X entity bulundu
    Y relation bulundu
 📊 Knowledge Graph JSON: ...
-💾 Output kaydedildi: outputs/simple_example.json
+💾 Output kaydedildi: outputs/example1_kg.json, outputs/example1_summary.json
 ```
 
 ### 📖 Daha Fazla Bilgi

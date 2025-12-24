@@ -19,6 +19,14 @@ DRG (Dynamic Retrieval Graph), dataset-agnostic bir semantic pipeline'dır. RAG 
 - **Pluggable Components**: Her bileşen bağımsız olarak değiştirilebilir ve test edilebilir
 - **Metadata Preservation**: Her chunk, orijin veri kaynağı ve işlem geçmişi hakkında zengin metadata taşır
 - **Domain Adaptation**: Domain-specific optimizasyonlar, core pipeline'ı değiştirmeden eklenebilir
+- **Automatic Schema Generation**: Metinden otomatik olarak EnhancedDRGSchema oluşturma (properties, examples, relation groups ile)
+
+### Enhanced Schema Yapısı
+
+- **EntityType**: Properties ve examples ile zengin entity tanımları
+- **RelationGroup**: Semantic grouping ile ilişkilerin organize edilmesi
+- **Relation**: Description (bağlantı sebebi) ve detail (bağlantı detayı) alanları
+- **Chunk-based Processing**: Chunk-based reading, semantic bağlam (RAG), chunk-based KG creation
 
 ## Folder Structure
 
@@ -50,19 +58,28 @@ DRG/
 │   ├── retrieval/          # Retrieval layer
 │   │   ├── __init__.py
 │   │   ├── rag.py          # Classic RAG retrieval
+│   │   ├── graphrag.py     # GraphRAG retrieval (KG traversal + community reports)
 │   │   ├── drg_search.py   # DRG search algorithms
 │   │   └── hybrid.py       # Hybrid RAG + GraphRAG
-│   ├── graph/              # Knowledge graph layer (existing)
+│   ├── schema.py           # Schema definitions (Entity, Relation, DRGSchema, EnhancedDRGSchema)
+│   ├── extract.py          # DSPy extraction logic (KGExtractor, generate_schema_from_text)
+│   ├── graph/              # Knowledge graph layer
 │   │   ├── __init__.py
-│   │   ├── schema.py       # DRG schema (existing)
-│   │   ├── extract.py      # Entity/relation extraction (existing)
-│   │   ├── graph.py        # KG class (existing)
-│   │   └── storage.py      # Graph storage abstraction
+│   │   ├── kg_core.py      # EnhancedKG class (KGNode, KGEdge, Cluster)
+│   │   ├── schema_generator.py # Dataset-agnostic schema generator
+│   │   ├── relationship_model.py # Relationship type classification
+│   │   ├── community_report.py # Community report generation
+│   │   └── visualization.py # KG visualization
 │   ├── clustering/         # Clustering layer
 │   │   ├── __init__.py
 │   │   ├── algorithms.py  # Clustering algorithms (Louvain, Leiden, Spectral)
 │   │   └── summarization.py # Cluster summarization
-│   └── cli.py              # CLI interface (existing)
+│   ├── optimizer/          # DSPy optimizer module
+│   │   ├── __init__.py
+│   │   ├── optimizer.py    # DRGOptimizer class
+│   │   └── metrics.py      # Evaluation metrics
+│   ├── mcp_api.py          # MCP API interface
+│   └── cli.py              # CLI interface
 ├── docs/                   # Documentation (NO CODE)
 │   ├── pipeline_overview.md
 │   ├── chunking_strategy.md
@@ -436,6 +453,57 @@ def chunk_text(text: str, chunk_size: int, overlap_ratio: float):
 - Clear contribution guidelines
 - Community-friendly structure
 
+## Schema Development Guidelines
+
+### EnhancedDRGSchema Kullanımı
+
+- **Yeni projeler için**: EnhancedDRGSchema kullan (properties, examples, relation groups ile)
+- **Schema Generation**: `generate_schema_from_text()` fonksiyonunu kullanarak otomatik şema oluştur
+- **Relation Details**: Her relation için description (bağlantı sebebi) ve detail (bağlantı detayı) ekle
+- **Semantic Grouping**: İlişkileri semantic olarak grupla (production, employment, location, temporal vb.)
+
+### Schema Formatı
+
+```python
+schema = EnhancedDRGSchema(
+    entity_types=[
+        EntityType(
+            name="Company",
+            description="Business organizations",
+            examples=["Apple", "Google"],
+            properties={"industry": "tech"}
+        )
+    ],
+    relation_groups=[
+        RelationGroup(
+            name="production",
+            description="How companies create products",
+            relations=[
+                Relation(
+                    name="produces",
+                    src="Company",
+                    dst="Product",
+                    description="Relationship type explanation",
+                    detail="Specific detail about connection"
+                )
+            ]
+        )
+    ],
+    auto_discovery=True
+)
+```
+
+## Pipeline Flow
+
+1. **Text Input**: Metin dosyası input olarak verilir
+2. **Schema Generation**: Eğer schema yoksa, `generate_schema_from_text()` ile otomatik oluşturulur
+3. **Chunking**: Metin chunk'lara ayrılır (token-based, sentence-based, semantic)
+4. **KG Extraction**: Her chunk için entity ve relation extraction (DSPy ile)
+5. **Embedding**: Entity embedding'leri eklenir
+6. **Clustering**: KG üzerinde clustering yapılır
+7. **Community Reports**: Cluster'lar için özet raporlar oluşturulur
+8. **GraphRAG Retrieval**: KG traversal + community reports ile retrieval
+
 ## Validation Checklist
 
 Her yeni feature için:
@@ -448,4 +516,6 @@ Her yeni feature için:
 - [ ] Logging eklendi mi?
 - [ ] Configuration management eklendi mi?
 - [ ] Documentation güncellendi mi?
-
+- [ ] EnhancedDRGSchema kullanılıyorsa properties ve examples eklendi mi?
+- [ ] Relation'lar semantic olarak gruplandı mı?
+- [ ] Relation description ve detail alanları dolduruldu mu?
