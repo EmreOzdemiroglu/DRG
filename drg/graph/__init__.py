@@ -87,6 +87,20 @@ from .community_report import (
     CommunityReportGenerator,
 )
 
+# Neo4j Exporter
+from .neo4j_exporter import (
+    Neo4jConfig,
+    Neo4jExporter,
+)
+
+# Visualization Adapter
+from .visualization_adapter import (
+    ProvenanceNode,
+    ProvenanceEdge,
+    ProvenanceGraph,
+    VisualizationAdapter,
+)
+
 __all__ = [
     # Legacy KG
     "KG",
@@ -113,5 +127,13 @@ __all__ = [
     # Community Report
     "CommunityReport",
     "CommunityReportGenerator",
+    # Neo4j Exporter
+    "Neo4jConfig",
+    "Neo4jExporter",
+    # Visualization Adapter
+    "ProvenanceNode",
+    "ProvenanceEdge",
+    "ProvenanceGraph",
+    "VisualizationAdapter",
 ]
 

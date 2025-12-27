@@ -69,11 +69,38 @@
       "description": "Tesla's production facilities and processes",
       "examples": [
         "Gigafactories",
+        "Nevada Gigafactory",
+        "Shanghai Gigafactory",
+        "Berlin Gigafactory",
+        "Texas Gigafactory",
         "renewable energy integration"
       ],
       "properties": {
         "goal": "net-zero energy facilities",
-        "approach": "using renewable energy sources"
+        "approach": "using renewable energy sources",
+        "products": [
+          "batteries",
+          "vehicles",
+          "energy storage"
+        ]
+      }
+    },
+    {
+      "name": "Location",
+      "description": "Geographic locations where Tesla operates",
+      "examples": [
+        "Nevada",
+        "Shanghai",
+        "Berlin",
+        "Texas",
+        "Austin"
+      ],
+      "properties": {
+        "type": [
+          "factory location",
+          "headquarters",
+          "market"
+        ]
       }
     },
     {
@@ -127,6 +154,104 @@
           "target": "Technology",
           "description": "Tesla has developed advanced technologies to improve its vehicles and support EV adoption",
           "detail": "This includes the Autopilot system, Full Self-Driving capabilities, the Supercharger network, and the Powerwall energy storage system."
+        },
+        {
+          "name": "Succeeded_By",
+          "source": "Vehicle",
+          "target": "Vehicle",
+          "description": "Vehicle models that were introduced after another model",
+          "detail": "Model S succeeded the Roadster, Model X succeeded Model S, Model 3 succeeded previous models, and Model Y succeeded Model 3."
+        },
+        {
+          "name": "Shares_Platform_With",
+          "source": "Vehicle",
+          "target": "Vehicle",
+          "description": "Vehicle models that share components and manufacturing platform",
+          "detail": "Model Y shares many components with Model 3, allowing for efficient manufacturing."
+        },
+        {
+          "name": "Equipped_With",
+          "source": "Vehicle",
+          "target": "Technology",
+          "description": "Technologies that are used in or equipped with vehicles",
+          "detail": "Tesla vehicles are equipped with Autopilot, Full Self-Driving capabilities, and use the Supercharger network. Model S features a large touchscreen display, Model X features advanced safety systems."
+        },
+        {
+          "name": "Enables",
+          "source": "Technology",
+          "target": "Vehicle",
+          "description": "Technologies that enable vehicle capabilities",
+          "detail": "Autopilot and FSD enable autonomous driving, Supercharger network enables long-distance travel."
+        },
+        {
+          "name": "Has_Feature",
+          "source": "Vehicle",
+          "target": "Technology",
+          "description": "Specific features or technologies that a vehicle model has",
+          "detail": "Model S has large touchscreen display, Model X has advanced safety systems and falcon-wing doors, vehicles receive over-the-air software updates."
+        },
+        {
+          "name": "Receives",
+          "source": "Vehicle",
+          "target": "Technology",
+          "description": "Technologies or updates that vehicles receive",
+          "detail": "Tesla vehicles receive over-the-air software updates that add new features, improve performance, and enhance safety."
+        },
+        {
+          "name": "Supports",
+          "source": "Technology",
+          "target": "Technology",
+          "description": "Technologies that support or work together with other technologies",
+          "detail": "FSD system supports Autopilot, Supercharger network supports long-distance travel for vehicles."
+        },
+        {
+          "name": "Integrates_With",
+          "source": "Technology",
+          "target": "Technology",
+          "description": "Technologies that integrate with other technologies",
+          "detail": "Powerwall integrates with solar panel systems, Solar Roof integrates solar cells into roof tiles."
+        },
+        {
+          "name": "Enhances",
+          "source": "Technology",
+          "target": "Technology",
+          "description": "Technologies that enhance or improve other technologies",
+          "detail": "FSD enhances Autopilot capabilities, software updates enhance vehicle performance."
+        },
+        {
+          "name": "Produced_At",
+          "source": "Vehicle",
+          "target": "Manufacturing",
+          "description": "Vehicles produced at manufacturing facilities",
+          "detail": "Tesla vehicles are produced at Gigafactories in Nevada, Shanghai, Berlin, and Texas."
+        },
+        {
+          "name": "Used_For",
+          "source": "Manufacturing",
+          "target": "Vehicle",
+          "description": "Manufacturing facilities used for producing vehicles",
+          "detail": "Gigafactories are used for producing Model S, Model X, Model 3, Model Y, and other vehicles."
+        },
+        {
+          "name": "Produces",
+          "source": "Manufacturing",
+          "target": "Technology",
+          "description": "Manufacturing facilities that produce technologies",
+          "detail": "Gigafactories produce battery cells, battery packs, energy storage products like Powerwall and Megapack."
+        },
+        {
+          "name": "Located_In",
+          "source": "Manufacturing",
+          "target": "Location",
+          "description": "Manufacturing facilities located in geographic locations",
+          "detail": "Gigafactories are located in Nevada, Shanghai, Berlin, and Texas. Tesla headquarters is in Austin, Texas."
+        },
+        {
+          "name": "Uses",
+          "source": "Manufacturing",
+          "target": "Technology",
+          "description": "Technologies used in manufacturing processes",
+          "detail": "Gigafactories use renewable energy sources, solar panels, and sustainable manufacturing practices."
         }
       ],
       "examples": []
@@ -169,6 +294,27 @@
           "target": "Industry",
           "description": "Tesla has inspired numerous startups and established companies to invest in electric vehicles and clean energy technologies",
           "detail": "The company has demonstrated that sustainable technology can be both profitable and transformative, creating a new paradigm for the automotive and energy industries."
+        },
+        {
+          "name": "Impacts",
+          "source": "Vehicle",
+          "target": "Industry",
+          "description": "Vehicle models that impact or transform industries",
+          "detail": "Model 3 impacted the mass market EV adoption, Model S transformed the luxury EV market."
+        },
+        {
+          "name": "Transforms",
+          "source": "Technology",
+          "target": "Industry",
+          "description": "Technologies that transform industries",
+          "detail": "Autopilot and FSD transform autonomous driving industry, Supercharger network transforms EV infrastructure industry."
+        },
+        {
+          "name": "Part_Of",
+          "source": "Industry",
+          "target": "Industry",
+          "description": "Sub-industries that are part of larger industries",
+          "detail": "Electric vehicle industry is part of automotive industry, renewable energy industry is part of energy industry."
         }
       ],
       "examples": []

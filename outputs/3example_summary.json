@@ -1,21 +1,21 @@
 {
-  "example_name": "example3",
+  "example_name": "3example",
   "input_files": {
-    "schema": "inputs/example3_schema.json",
-    "text": "inputs/example3_text.txt"
+    "schema": "inputs/3example_schema.json",
+    "text": "inputs/3example_text.txt"
   },
   "chunks": 11,
-  "entities": 64,
-  "relations": 81,
-  "kg_nodes": 69,
-  "kg_edges": 81,
-  "embedded_nodes": 69,
-  "clusters": 10,
-  "community_reports": 10,
+  "entities": 44,
+  "relations": 37,
+  "kg_nodes": 44,
+  "kg_edges": 36,
+  "embedded_nodes": 44,
+  "clusters": 15,
+  "community_reports": 15,
   "output_files": {
-    "schema": "outputs/example3_schema.json",
-    "kg": "outputs/example3_kg.json",
-    "summary": "outputs/example3_summary.json",
-    "community_reports": "outputs/example3_community_reports.json"
+    "schema": "outputs/3example_schema.json",
+    "kg": "outputs/3example_kg.json",
+    "summary": "outputs/3example_summary.json",
+    "community_reports": "outputs/3example_community_reports.json"
   }
 }

@@ -1,112 +1,88 @@
 {
   "reports": [
     {
-      "cluster_id": "cluster_0",
-      "summary": "Cluster cluster_0 contains 47 entities primarily of type 'Technology' with 62 internal relationships. The most common relationship type is 'Introduced'.",
+      "cluster_id": "cluster_12",
+      "summary": "Cluster cluster_12 contains 6 entities primarily of type 'Vehicle' with 5 internal relationships. The most common relationship type is 'Transforms'.",
       "top_actors": [
         {
+          "id": "automotive industry",
+          "connections": 6
+        },
+        {
+          "id": "Tesla Roadster",
+          "connections": 3
+        },
+        {
+          "id": "Solar Roof",
+          "connections": 1
+        },
+        {
+          "id": "software updates",
+          "connections": 1
+        },
+        {
           "id": "Tesla Inc.",
-          "connections": 68
-        },
-        {
-          "id": "energy industry",
-          "connections": 3
-        },
-        {
-          "id": "battery technology",
-          "connections": 3
+          "connections": 1
         },
         {
           "id": "electric vehicles",
-          "connections": 3
-        },
-        {
-          "id": "automotive industry",
-          "connections": 3
-        },
-        {
-          "id": "Elon Musk",
-          "connections": 2
-        },
-        {
-          "id": "Shanghai Gigafactory",
-          "connections": 2
-        },
-        {
-          "id": "Chinese market",
-          "connections": 2
-        },
-        {
-          "id": "Gigafactories",
-          "connections": 2
-        },
-        {
-          "id": "autonomous driving capabilities",
-          "connections": 2
+          "connections": 1
         }
       ],
       "top_relationships": [
         {
+          "type": "Transforms",
+          "count": 2
+        },
+        {
+          "type": "Impacts",
+          "count": 2
+        },
+        {
           "type": "Introduced",
-          "count": 12
-        },
-        {
-          "type": "Technological Innovations",
-          "count": 7
-        },
-        {
-          "type": "Sustainable Manufacturing",
-          "count": 6
-        },
-        {
-          "type": "Founded",
-          "count": 5
-        },
-        {
-          "type": "Industry Disruption",
-          "count": 5
-        },
-        {
-          "type": "Inspiring Innovation",
-          "count": 5
-        },
-        {
-          "type": "Develops",
-          "count": 4
-        },
-        {
-          "type": "Employs",
-          "count": 4
-        },
-        {
-          "type": "Leadership",
-          "count": 2
-        },
-        {
-          "type": "Serves",
-          "count": 2
+          "count": 1
         }
       ],
       "themes": [
-        "Technology-centric",
-        "Introduced networks",
+        "Vehicle-centric",
+        "Transforms networks",
         "loosely connected"
       ],
       "metadata": {
-        "node_count": 47,
-        "edge_count": 46,
-        "density": 0.028677150786308975,
+        "node_count": 6,
+        "edge_count": 5,
+        "density": 0.16666666666666666,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
       "cluster_id": "cluster_1",
-      "summary": "Cluster cluster_1 contains 8 entities primarily of type 'Manufacturing' with 7 internal relationships. The most common relationship type is 'Located'.",
+      "summary": "Cluster cluster_1 contains 10 entities primarily of type 'Location' with 9 internal relationships. The most common relationship type is 'Located_In'.",
       "top_actors": [
         {
           "id": "Gigafactory",
           "connections": 8
+        },
+        {
+          "id": "Gigafactories",
+          "connections": 2
+        },
+        {
+          "id": "Shanghai",
+          "connections": 2
+        },
+        {
+          "id": "Nevada",
+          "connections": 2
+        },
+        {
+          "id": "battery cells",
+          "connections": 1
+        },
+        {
+          "id": "Berlin",
+          "connections": 1
         },
         {
           "id": "battery packs",
@@ -117,30 +93,18 @@
           "connections": 1
         },
         {
-          "id": "Berlin",
-          "connections": 1
-        },
-        {
-          "id": "Shanghai",
-          "connections": 1
-        },
-        {
-          "id": "Nevada",
-          "connections": 1
-        },
-        {
-          "id": "battery cells",
-          "connections": 1
-        },
-        {
           "id": "energy storage products",
+          "connections": 1
+        },
+        {
+          "id": "Shanghai Gigafactory",
           "connections": 1
         }
       ],
       "top_relationships": [
         {
-          "type": "Located",
-          "count": 4
+          "type": "Located_In",
+          "count": 6
         },
         {
           "type": "Produces",
@@ -148,25 +112,109 @@
         }
       ],
       "themes": [
-        "Manufacturing-centric",
-        "Located networks",
+        "Location-centric",
+        "Located_In networks",
         "loosely connected"
       ],
       "metadata": {
-        "node_count": 8,
-        "edge_count": 7,
-        "density": 0.125,
+        "node_count": 10,
+        "edge_count": 9,
+        "density": 0.1,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
-      "cluster_id": "cluster_2",
-      "summary": "Cluster cluster_2 contains 1 entities primarily of type 'Manufacturing' with 0 internal relationships.",
+      "cluster_id": "cluster_4",
+      "summary": "Cluster cluster_4 contains 12 entities primarily of type 'Vehicle' with 12 internal relationships. The most common relationship type is 'Introduced'.",
+      "top_actors": [
+        {
+          "id": "Tesla",
+          "connections": 17
+        },
+        {
+          "id": "Model 3",
+          "connections": 2
+        },
+        {
+          "id": "Model Y",
+          "connections": 2
+        },
+        {
+          "id": "Full Self-Driving (FSD)",
+          "connections": 1
+        },
+        {
+          "id": "Model S",
+          "connections": 1
+        },
+        {
+          "id": "manufacturing",
+          "connections": 1
+        },
+        {
+          "id": "Elon Musk",
+          "connections": 1
+        },
+        {
+          "id": "Supercharger network",
+          "connections": 1
+        },
+        {
+          "id": "energy industry",
+          "connections": 1
+        },
+        {
+          "id": "Autopilot",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Introduced",
+          "count": 4
+        },
+        {
+          "type": "Technological Innovations",
+          "count": 4
+        },
+        {
+          "type": "Sustainable Manufacturing",
+          "count": 1
+        },
+        {
+          "type": "Leadership",
+          "count": 1
+        },
+        {
+          "type": "Inspiring Innovation",
+          "count": 1
+        },
+        {
+          "type": "Shares_Platform_With",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Vehicle-centric",
+        "Introduced networks",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 12,
+        "edge_count": 12,
+        "density": 0.09090909090909091,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_5",
+      "summary": "Cluster cluster_5 contains 1 entities primarily of type 'Technology' with 0 internal relationships.",
       "top_actors": [],
       "top_relationships": [],
       "themes": [
-        "Manufacturing-centric",
+        "Technology-centric",
         "loosely connected"
       ],
       "metadata": {
@@ -179,71 +227,11 @@
     },
     {
       "cluster_id": "cluster_6",
-      "summary": "Cluster cluster_6 contains 5 entities primarily of type 'Technology' with 4 internal relationships. The most common relationship type is 'Technological Innovations'.",
-      "top_actors": [
-        {
-          "id": "Model X",
-          "connections": 4
-        },
-        {
-          "id": "Model 3",
-          "connections": 2
-        },
-        {
-          "id": "Electric powertrain",
-          "connections": 2
-        },
-        {
-          "id": "Advanced safety systems",
-          "connections": 1
-        },
-        {
-          "id": "Falcon-wing doors",
-          "connections": 1
-        }
-      ],
-      "top_relationships": [
-        {
-          "type": "Technological Innovations",
-          "count": 4
-        }
-      ],
+      "summary": "Cluster cluster_6 contains 1 entities primarily of type 'Technology' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
       "themes": [
         "Technology-centric",
-        "Technological Innovations networks"
-      ],
-      "metadata": {
-        "node_count": 5,
-        "edge_count": 4,
-        "density": 0.2,
-        "algorithm": "louvain",
-        "resolution": 1.0
-      }
-    },
-    {
-      "cluster_id": "cluster_4",
-      "summary": "Cluster cluster_4 contains 1 entities primarily of type 'Company' with 0 internal relationships.",
-      "top_actors": [],
-      "top_relationships": [],
-      "themes": [
-        "Company-centric",
-        "loosely connected"
-      ],
-      "metadata": {
-        "node_count": 1,
-        "edge_count": 0,
-        "density": 0.0,
-        "algorithm": "louvain",
-        "resolution": 1.0
-      }
-    },
-    {
-      "cluster_id": "cluster_5",
-      "summary": "Cluster cluster_5 contains 1 entities primarily of type 'Vehicle' with 0 internal relationships.",
-      "top_actors": [],
-      "top_relationships": [],
-      "themes": [
-        "Vehicle-centric",
         "loosely connected"
       ],
       "metadata": {
@@ -256,73 +244,139 @@
     },
     {
       "cluster_id": "cluster_7",
-      "summary": "Cluster cluster_7 contains 2 entities primarily of type 'Vehicle' with 1 internal relationships. The most common relationship type is 'Based on'.",
-      "top_actors": [
-        {
-          "id": "Tesla Roadster",
-          "connections": 3
-        },
-        {
-          "id": "Lotus Elise",
-          "connections": 1
-        }
-      ],
-      "top_relationships": [
-        {
-          "type": "Based on",
-          "count": 1
-        }
-      ],
+      "summary": "Cluster cluster_7 contains 1 entities primarily of type 'Vehicle' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
       "themes": [
         "Vehicle-centric",
-        "Based on networks"
+        "loosely connected"
       ],
       "metadata": {
-        "node_count": 2,
-        "edge_count": 1,
-        "density": 0.5,
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
       "cluster_id": "cluster_8",
-      "summary": "Cluster cluster_8 contains 2 entities primarily of type 'Vehicle' with 1 internal relationships. The most common relationship type is 'Technological Innovations'.",
+      "summary": "Cluster cluster_8 contains 5 entities primarily of type 'Technology' with 4 internal relationships. The most common relationship type is 'Uses'.",
       "top_actors": [
         {
-          "id": "Model Y",
+          "id": "automotive manufacturing",
+          "connections": 4
+        },
+        {
+          "id": "battery technology",
           "connections": 2
         },
         {
-          "id": "Efficient manufacturing",
+          "id": "power electronics",
+          "connections": 1
+        },
+        {
+          "id": "software development",
+          "connections": 1
+        },
+        {
+          "id": "electric motors",
           "connections": 1
         }
       ],
       "top_relationships": [
         {
-          "type": "Technological Innovations",
-          "count": 1
+          "type": "Uses",
+          "count": 4
         }
       ],
       "themes": [
-        "Vehicle-centric",
-        "Technological Innovations networks"
+        "Technology-centric",
+        "Uses networks"
       ],
       "metadata": {
-        "node_count": 2,
-        "edge_count": 1,
-        "density": 0.5,
+        "node_count": 5,
+        "edge_count": 4,
+        "density": 0.2,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
       "cluster_id": "cluster_9",
-      "summary": "Cluster cluster_9 contains 1 entities primarily of type 'Company' with 0 internal relationships.",
+      "summary": "Cluster cluster_9 contains 1 entities primarily of type 'Location' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Location-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_10",
+      "summary": "Cluster cluster_10 contains 1 entities primarily of type 'Company' with 0 internal relationships.",
       "top_actors": [],
       "top_relationships": [],
       "themes": [
         "Company-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_11",
+      "summary": "Cluster cluster_11 contains 1 entities primarily of type 'Technology' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Technology-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_13",
+      "summary": "Cluster cluster_13 contains 1 entities primarily of type 'Technology' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Technology-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_14",
+      "summary": "Cluster cluster_14 contains 1 entities primarily of type 'Vehicle' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Vehicle-centric",
         "loosely connected"
       ],
       "metadata": {
@@ -335,11 +389,45 @@
     },
     {
       "cluster_id": "cluster_3",
-      "summary": "Cluster cluster_3 contains 1 entities primarily of type 'Company' with 0 internal relationships.",
+      "summary": "Cluster cluster_3 contains 1 entities primarily of type 'Industry' with 0 internal relationships.",
       "top_actors": [],
       "top_relationships": [],
       "themes": [
-        "Company-centric",
+        "Industry-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_0",
+      "summary": "Cluster cluster_0 contains 1 entities primarily of type 'Industry' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Industry-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_2",
+      "summary": "Cluster cluster_2 contains 1 entities primarily of type 'Industry' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Industry-centric",
         "loosely connected"
       ],
       "metadata": {
@@ -351,5 +439,5 @@
       }
     }
   ],
-  "total_clusters": 10
+  "total_clusters": 15
 }

@@ -221,15 +221,22 @@ def main():
     text_path = inputs_dir / f"{example_name}_text.txt"
     
     # API Key ayarla (sadece environment variable'dan oku)
+    gemini_key = os.getenv("GEMINI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    if openrouter_key:
-        os.environ["OPENROUTER_API_KEY"] = openrouter_key
-        print("✅ OPENROUTER_API_KEY environment variable'dan okundu")
-    else:
-        print("⚠️  OPENROUTER_API_KEY bulunamadı. OpenRouter servisleri çalışmayabilir.")
-        print("   API key'i ayarlamak için: export OPENROUTER_API_KEY='your-key'")
+    
+    # Model seçimi: Önce Gemini, sonra OpenRouter
     if not os.getenv("DRG_MODEL"):
-        os.environ["DRG_MODEL"] = "openrouter/anthropic/claude-3-haiku"
+        if gemini_key:
+            os.environ["DRG_MODEL"] = "gemini/gemini-2.0-flash-exp"
+            print("✅ GEMINI_API_KEY bulundu, Gemini model kullanılacak")
+        elif openrouter_key:
+            os.environ["OPENROUTER_API_KEY"] = openrouter_key
+            os.environ["DRG_MODEL"] = "openrouter/anthropic/claude-3-haiku"
+            print("✅ OPENROUTER_API_KEY bulundu, OpenRouter model kullanılacak")
+        else:
+            os.environ["DRG_MODEL"] = "openrouter/anthropic/claude-3-haiku"
+            print("⚠️  API key bulunamadı. OpenRouter varsayılan olarak kullanılacak.")
+            print("   API key ayarlamak için: export GEMINI_API_KEY='your-key' veya export OPENROUTER_API_KEY='your-key'")
     
     # Metni dosyadan yükle
     if not text_path.exists():
@@ -267,29 +274,44 @@ def main():
     print("2. KNOWLEDGE GRAPH EXTRACTION")
     print("=" * 70)
     
-    # Schema'yı dosyadan yükle veya metinden otomatik oluştur
-    if not schema_path.exists():
-        print(f"⚠️  Schema dosyası bulunamadı: {schema_path}")
+    # Schema generation stratejisi:
+    # 1. Eğer DRG_FORCE_SCHEMA_GEN=1 ise, her zaman metinden schema oluştur (schema dosyasını yok say)
+    # 2. Eğer schema dosyası yoksa, otomatik oluştur
+    # 3. Eğer schema dosyası varsa ve DRG_FORCE_SCHEMA_GEN yoksa, dosyadan yükle
+    
+    force_schema_gen = os.getenv("DRG_FORCE_SCHEMA_GEN", "0") == "1"
+    
+    if force_schema_gen or not schema_path.exists():
+        if force_schema_gen and schema_path.exists():
+            print(f"⚠️  DRG_FORCE_SCHEMA_GEN=1: Mevcut schema dosyası yok sayılıyor, metinden yeniden oluşturuluyor...")
+        else:
+            print(f"⚠️  Schema dosyası bulunamadı: {schema_path}")
         print(f"   Metinden otomatik schema oluşturuluyor...")
+        print(f"   💡 Her zaman otomatik schema generation için: export DRG_FORCE_SCHEMA_GEN=1")
+        
         # LLM'i yapılandır (schema generation öncesi)
         from drg.extract import _configure_llm_auto, generate_schema_from_text
         _configure_llm_auto()
         print("   🔧 LLM konfigürasyonu yapıldı")
         print("   🤖 LLM ile metin analiz ediliyor ve uygun şema oluşturuluyor...")
+        print("   ⏳ Bu işlem birkaç saniye sürebilir...")
         
         # Metinden otomatik şema oluştur (EnhancedDRGSchema döndürür)
         schema = generate_schema_from_text(text)
         
-        # Oluşturulan şemayı kaydet
+        # Oluşturulan şemayı kaydet (inputs klasörüne de kaydet ki sonraki çalıştırmalarda kullanılabilsin)
         save_schema(schema, str(schema_path))
         print(f"   ✅ Otomatik enhanced schema oluşturuldu ve kaydedildi: {schema_path}")
         if isinstance(schema, EnhancedDRGSchema):
             total_relations = sum(len(rg.relations) for rg in schema.relation_groups)
             print(f"      {len(schema.entity_types)} entity type, {len(schema.relation_groups)} relation group, {total_relations} relation")
+            if total_relations < 25:
+                print(f"      ⚠️  Uyarı: Schema'da sadece {total_relations} relation var. Daha zengin bir KG için 30-50+ relation önerilir.")
         else:
             print(f"      {len(schema.entities)} entity, {len(schema.relations)} relation")
     else:
         print(f"📄 Schema yükleniyor: {schema_path}")
+        print(f"   💡 Metinden yeniden schema oluşturmak için: export DRG_FORCE_SCHEMA_GEN=1")
         schema = load_schema(schema_path)
         if isinstance(schema, EnhancedDRGSchema):
             total_relations = sum(len(rg.relations) for rg in schema.relation_groups)
@@ -342,7 +364,42 @@ def main():
         entities_list = list(all_entities)
         triples_list = list(all_triples)
         
-        print(f"✅ Toplam {len(entities_list)} unique entity ve {len(triples_list)} unique relation extract edildi")
+        # Schema validation uygula (schema'da olmayan relation'ları filtrele)
+        print(f"   🔍 Schema validation uygulanıyor...")
+        
+        # Entity type'ları schema'dan al
+        if isinstance(schema, EnhancedDRGSchema):
+            entity_names = {et.name for et in schema.entity_types}
+        else:
+            entity_names = {e.name for e in schema.entities}
+        
+        # Valid entity'leri filtrele
+        valid_entities = [(name, etype) for name, etype in entities_list if etype in entity_names]
+        
+        # Valid relation'ları filtrele
+        if isinstance(schema, EnhancedDRGSchema):
+            valid_triples = []
+            for s, r, o in triples_list:
+                s_type = next((etype for name, etype in valid_entities if name == s), None)
+                o_type = next((etype for name, etype in valid_entities if name == o), None)
+                if s_type and o_type and schema.is_valid_relation(r, s_type, o_type):
+                    valid_triples.append((s, r, o))
+        else:
+            rel_types = {(r.src, r.name, r.dst) for r in schema.relations}
+            valid_triples = []
+            for s, r, o in triples_list:
+                s_type = next((etype for name, etype in valid_entities if name == s), None)
+                o_type = next((etype for name, etype in valid_entities if name == o), None)
+                if s_type and o_type and (s_type, r, o_type) in rel_types:
+                    valid_triples.append((s, r, o))
+        
+        # Filtered sonuçları kullan
+        entities_list = valid_entities
+        triples_list = valid_triples
+        
+        print(f"✅ Toplam {len(entities_list)} unique entity ve {len(triples_list)} unique relation extract edildi (schema validation sonrası)")
+        if len(all_entities) > len(entities_list) or len(all_triples) > len(triples_list):
+            print(f"   ⚠️  Schema validation: {len(all_entities) - len(entities_list)} entity, {len(all_triples) - len(triples_list)} relation filtrelendi")
         print(f"   Örnek entities: {entities_list[:5]}")
         print(f"   Örnek relations: {triples_list[:3]}")
         

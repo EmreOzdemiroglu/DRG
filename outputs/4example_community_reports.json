@@ -2,73 +2,43 @@
   "reports": [
     {
       "cluster_id": "cluster_0",
-      "summary": "Cluster cluster_0 contains 5 entities primarily of type 'Neuroscientist' with 4 internal relationships. The most common relationship type is 'Refinement'.",
-      "top_actors": [
-        {
-          "id": "ARIES",
-          "connections": 5
-        },
-        {
-          "id": "Neural Link Protocol",
-          "connections": 3
-        },
-        {
-          "id": "Dr. Sarah Mitchell",
-          "connections": 3
-        },
-        {
-          "id": "Dr. Marcus Chen",
-          "connections": 2
-        },
-        {
-          "id": "Council",
-          "connections": 1
-        }
-      ],
-      "top_relationships": [
-        {
-          "type": "Refinement",
-          "count": 3
-        },
-        {
-          "type": "Misused",
-          "count": 1
-        }
-      ],
+      "summary": "Cluster cluster_0 contains 1 entities primarily of type 'Technology' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
       "themes": [
-        "Neuroscientist-centric",
-        "Refinement networks"
+        "Technology-centric",
+        "loosely connected"
       ],
       "metadata": {
-        "node_count": 5,
-        "edge_count": 4,
-        "density": 0.2,
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
       "cluster_id": "cluster_1",
-      "summary": "Cluster cluster_1 contains 2 entities primarily of type 'Cognitive Enhancement Technology Users' with 1 internal relationships. The most common relationship type is 'Collaboration'.",
+      "summary": "Cluster cluster_1 contains 2 entities primarily of type 'Person' with 1 internal relationships. The most common relationship type is 'Founded'.",
       "top_actors": [
         {
-          "id": "James Morrison",
-          "connections": 2
+          "id": "Dr. Chen",
+          "connections": 1
         },
         {
-          "id": "Local Communities",
+          "id": "Quantum Consciousness Lab",
           "connections": 1
         }
       ],
       "top_relationships": [
         {
-          "type": "Collaboration",
+          "type": "Founded",
           "count": 1
         }
       ],
       "themes": [
-        "Cognitive Enhancement Technology Users-centric",
-        "Collaboration networks"
+        "Person-centric",
+        "Founded networks"
       ],
       "metadata": {
         "node_count": 2,
@@ -80,88 +50,137 @@
     },
     {
       "cluster_id": "cluster_2",
-      "summary": "Cluster cluster_2 contains 5 entities primarily of type 'Unknown' with 5 internal relationships. The most common relationship type is 'Uploaded'.",
-      "top_actors": [
-        {
-          "id": "Resistance Network",
-          "connections": 7
-        },
-        {
-          "id": "Alex Rivera",
-          "connections": 3
-        },
-        {
-          "id": "Counter-Protocol",
-          "connections": 2
-        },
-        {
-          "id": "Foundation",
-          "connections": 1
-        },
-        {
-          "id": "Council Headquarters",
-          "connections": 1
-        }
-      ],
-      "top_relationships": [
-        {
-          "type": "Uploaded",
-          "count": 1
-        },
-        {
-          "type": "Led by",
-          "count": 1
-        },
-        {
-          "type": "Collaboration",
-          "count": 1
-        },
-        {
-          "type": "Partnership",
-          "count": 1
-        },
-        {
-          "type": "Infiltrated",
-          "count": 1
-        }
-      ],
+      "summary": "Cluster cluster_2 contains 1 entities primarily of type 'Person' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
       "themes": [
-        "Uploaded networks"
+        "Person-centric",
+        "loosely connected"
       ],
       "metadata": {
-        "node_count": 5,
-        "edge_count": 4,
-        "density": 0.25,
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
       "cluster_id": "cluster_3",
-      "summary": "Cluster cluster_3 contains 3 entities primarily of type 'Cognitive Enhancement Technology Users' with 2 internal relationships. The most common relationship type is 'Collaboration'.",
+      "summary": "Cluster cluster_3 contains 5 entities primarily of type 'Organization' with 5 internal relationships. The most common relationship type is 'Uses'.",
       "top_actors": [
         {
-          "id": "test subjects",
+          "id": "Neural Link Protocol",
+          "connections": 11
+        },
+        {
+          "id": "Neo-Paris",
           "connections": 3
         },
         {
-          "id": "linked individuals",
+          "id": "council",
+          "connections": 2
+        },
+        {
+          "id": "Global Security Council",
           "connections": 1
         },
         {
-          "id": "the nanites used in the Neural Link Protocol",
+          "id": "Old Paris",
           "connections": 1
         }
       ],
       "top_relationships": [
         {
-          "type": "Collaboration",
+          "type": "Uses",
+          "count": 2
+        },
+        {
+          "type": "Deployed_At",
+          "count": 2
+        },
+        {
+          "type": "Operates_In",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Organization-centric",
+        "Uses networks"
+      ],
+      "metadata": {
+        "node_count": 5,
+        "edge_count": 5,
+        "density": 0.25,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_4",
+      "summary": "Cluster cluster_4 contains 3 entities primarily of type 'Person' with 2 internal relationships. The most common relationship type is 'Works_At'.",
+      "top_actors": [
+        {
+          "id": "Dr. Elena Vasquez",
+          "connections": 3
+        },
+        {
+          "id": "ARIES",
+          "connections": 2
+        },
+        {
+          "id": "Ethical Responsibility",
+          "connections": 2
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Works_At",
+          "count": 1
+        },
+        {
+          "type": "Ensures",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Person-centric",
+        "Works_At networks"
+      ],
+      "metadata": {
+        "node_count": 3,
+        "edge_count": 2,
+        "density": 0.3333333333333333,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_5",
+      "summary": "Cluster cluster_5 contains 3 entities primarily of type 'Person' with 2 internal relationships. The most common relationship type is 'Works_At'.",
+      "top_actors": [
+        {
+          "id": "Institute of Cognitive Enhancement",
+          "connections": 5
+        },
+        {
+          "id": "Dr. Sarah Mitchell",
+          "connections": 1
+        },
+        {
+          "id": "Dr. Marcus Chen",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Works_At",
           "count": 2
         }
       ],
       "themes": [
-        "Cognitive Enhancement Technology Users-centric",
-        "Collaboration networks"
+        "Person-centric",
+        "Works_At networks"
       ],
       "metadata": {
         "node_count": 3,
@@ -173,66 +192,173 @@
     },
     {
       "cluster_id": "cluster_6",
-      "summary": "Cluster cluster_6 contains 7 entities primarily of type 'Unknown' with 6 internal relationships. The most common relationship type is 'Collaboration'.",
+      "summary": "Cluster cluster_6 contains 3 entities primarily of type 'Concept' with 2 internal relationships. The most common relationship type is 'Leads'.",
       "top_actors": [
         {
-          "id": "Dr. Elena Vasquez",
-          "connections": 18
+          "id": "Human Autonomy",
+          "connections": 4
         },
         {
-          "id": "Free Neural Network Foundation",
-          "connections": 1
+          "id": "Resistance Network",
+          "connections": 2
         },
         {
-          "id": "Corporations",
-          "connections": 1
-        },
-        {
-          "id": "nanites",
-          "connections": 1
-        },
-        {
-          "id": "Neural Link Protocol Users",
-          "connections": 1
-        },
-        {
-          "id": "Citizen Groups",
-          "connections": 1
-        },
-        {
-          "id": "Governments",
+          "id": "Alex Rivera",
           "connections": 1
         }
       ],
       "top_relationships": [
         {
-          "type": "Collaboration",
-          "count": 4
+          "type": "Leads",
+          "count": 1
         },
         {
-          "type": "Refinement",
-          "count": 2
+          "type": "Fights_Against",
+          "count": 1
         }
       ],
       "themes": [
-        "Collaboration networks",
-        "loosely connected"
+        "Concept-centric",
+        "Leads networks"
       ],
       "metadata": {
-        "node_count": 7,
-        "edge_count": 6,
-        "density": 0.14285714285714285,
+        "node_count": 3,
+        "edge_count": 2,
+        "density": 0.3333333333333333,
         "algorithm": "louvain",
         "resolution": 1.0
       }
     },
     {
-      "cluster_id": "cluster_5",
-      "summary": "Cluster cluster_5 contains 1 entities primarily of type 'Consciousness Mapping Expert' with 0 internal relationships.",
+      "cluster_id": "cluster_9",
+      "summary": "Cluster cluster_9 contains 5 entities primarily of type 'Person' with 4 internal relationships. The most common relationship type is 'Impacts'.",
+      "top_actors": [
+        {
+          "id": "Cognitive Enhancement",
+          "connections": 4
+        },
+        {
+          "id": "Free Neural Network Foundation",
+          "connections": 3
+        },
+        {
+          "id": "Dr. Vasquez",
+          "connections": 2
+        },
+        {
+          "id": "Neural Link",
+          "connections": 1
+        },
+        {
+          "id": "Underground Laboratory",
+          "connections": 1
+        }
+      ],
+      "top_relationships": [
+        {
+          "type": "Impacts",
+          "count": 1
+        },
+        {
+          "type": "Relocated_To",
+          "count": 1
+        },
+        {
+          "type": "Ensures",
+          "count": 1
+        },
+        {
+          "type": "Founded",
+          "count": 1
+        }
+      ],
+      "themes": [
+        "Person-centric",
+        "Impacts networks"
+      ],
+      "metadata": {
+        "node_count": 5,
+        "edge_count": 4,
+        "density": 0.2,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_8",
+      "summary": "Cluster cluster_8 contains 1 entities primarily of type 'Technology' with 0 internal relationships.",
       "top_actors": [],
       "top_relationships": [],
       "themes": [
-        "Consciousness Mapping Expert-centric",
+        "Technology-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_10",
+      "summary": "Cluster cluster_10 contains 1 entities primarily of type 'Concept' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Concept-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_11",
+      "summary": "Cluster cluster_11 contains 1 entities primarily of type 'Person' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Person-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_12",
+      "summary": "Cluster cluster_12 contains 1 entities primarily of type 'Organization' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Organization-centric",
+        "loosely connected"
+      ],
+      "metadata": {
+        "node_count": 1,
+        "edge_count": 0,
+        "density": 0.0,
+        "algorithm": "louvain",
+        "resolution": 1.0
+      }
+    },
+    {
+      "cluster_id": "cluster_13",
+      "summary": "Cluster cluster_13 contains 1 entities primarily of type 'Person' with 0 internal relationships.",
+      "top_actors": [],
+      "top_relationships": [],
+      "themes": [
+        "Person-centric",
         "loosely connected"
       ],
       "metadata": {
@@ -245,11 +371,11 @@
     },
     {
       "cluster_id": "cluster_7",
-      "summary": "Cluster cluster_7 contains 1 entities primarily of type 'Cognitive Enhancement Technology Users' with 0 internal relationships.",
+      "summary": "Cluster cluster_7 contains 1 entities primarily of type 'Concept' with 0 internal relationships.",
       "top_actors": [],
       "top_relationships": [],
       "themes": [
-        "Cognitive Enhancement Technology Users-centric",
+        "Concept-centric",
         "loosely connected"
       ],
       "metadata": {
@@ -259,49 +385,7 @@
         "algorithm": "louvain",
         "resolution": 1.0
       }
-    },
-    {
-      "cluster_id": "cluster_4",
-      "summary": "Cluster cluster_4 contains 3 entities primarily of type 'Unknown' with 3 internal relationships. The most common relationship type is 'Refinement'.",
-      "top_actors": [
-        {
-          "id": "Neuroscientist",
-          "connections": 3
-        },
-        {
-          "id": "AI Caretaker",
-          "connections": 2
-        },
-        {
-          "id": "Quantum Computing Specialist",
-          "connections": 1
-        }
-      ],
-      "top_relationships": [
-        {
-          "type": "Refinement",
-          "count": 1
-        },
-        {
-          "type": "Partnership",
-          "count": 1
-        },
-        {
-          "type": "Collaboration",
-          "count": 1
-        }
-      ],
-      "themes": [
-        "Refinement networks"
-      ],
-      "metadata": {
-        "node_count": 3,
-        "edge_count": 2,
-        "density": 0.5,
-        "algorithm": "louvain",
-        "resolution": 1.0
-      }
     }
   ],
-  "total_clusters": 8
+  "total_clusters": 14
 }

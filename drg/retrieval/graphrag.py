@@ -17,6 +17,7 @@ from ..vector_store import VectorStore
 from ..graph import KG
 from ..graph.kg_core import EnhancedKG, KGNode
 from ..graph.community_report import CommunityReport, CommunityReportGenerator
+from ..graph.visualization_adapter import ProvenanceGraph, ProvenanceNode, ProvenanceEdge
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class GraphRAGRetrievalContext:
     community_reports: List[Dict[str, Any]]
     seed_entities: List[str]
     context_chunks: Optional[List[Dict[str, Any]]] = None  # Vector store'dan gelen bağlam (opsiyonel)
+    provenance_graph: Optional[Dict[str, Any]] = None  # Provenance graph for explainability
 
 
 class GraphRAGRetriever:
@@ -147,6 +149,7 @@ class GraphRAGRetriever:
                 community_reports=[],
                 seed_entities=[],
                 context_chunks=context_chunks,
+                provenance_graph=None,
             )
         
         logger.info(f"Found {len(seed_entities)} seed entities: {seed_entities[:5]}")
@@ -163,6 +166,16 @@ class GraphRAGRetriever:
             k=k_reports,
         )
         
+        # Generate provenance graph for explainability
+        provenance_graph = self._create_provenance_graph(
+            query=query,
+            seed_entities=seed_entities,
+            context_chunks=context_chunks,
+            relevant_reports=relevant_reports,
+            entities=entities,
+            relationships=relationships,
+        )
+        
         return GraphRAGRetrievalContext(
             kg_subgraph=subgraph,
             entities=entities,
@@ -170,6 +183,7 @@ class GraphRAGRetriever:
             community_reports=relevant_reports,
             seed_entities=seed_entities,
             context_chunks=context_chunks,  # Bağlam için (opsiyonel)
+            provenance_graph=provenance_graph.to_dict() if provenance_graph else None,
         )
     
     def _find_seed_entities(
@@ -345,6 +359,164 @@ class GraphRAGRetriever:
             return 0.0
         
         return dot_product / (magnitude1 * magnitude2)
+    
+    def _create_provenance_graph(
+        self,
+        query: str,
+        seed_entities: List[str],
+        context_chunks: Optional[List[Dict[str, Any]]],
+        relevant_reports: List[Dict[str, Any]],
+        entities: List[str],
+        relationships: List[Dict[str, Any]],
+    ) -> ProvenanceGraph:
+        """Create provenance graph for explainable retrieval.
+        
+        Creates provenance chain: query → chunks → community → summary → answer
+        
+        Args:
+            query: Original query
+            seed_entities: Seed entities found
+            context_chunks: Context chunks from vector store
+            relevant_reports: Relevant community reports
+            entities: Entities in subgraph
+            relationships: Relationships in subgraph
+        
+        Returns:
+            ProvenanceGraph instance
+        """
+        nodes = []
+        edges = []
+        
+        # Query node
+        query_node = ProvenanceNode(
+            id="query",
+            type="query",
+            label=f"Query: {query[:50]}",
+            data={"query": query},
+        )
+        nodes.append(query_node)
+        
+        # Chunk nodes (if available)
+        chunk_nodes = []
+        if context_chunks:
+            for idx, chunk in enumerate(context_chunks[:5]):  # Limit to 5 chunks
+                chunk_id = f"chunk_{idx}"
+                chunk_node = ProvenanceNode(
+                    id=chunk_id,
+                    type="chunk",
+                    label=f"Chunk {idx+1}",
+                    data={
+                        "chunk_id": chunk.get("chunk_id"),
+                        "text": chunk.get("text", "")[:100],
+                        "score": chunk.get("score"),
+                    },
+                    metadata=chunk.get("metadata", {}),
+                )
+                nodes.append(chunk_node)
+                chunk_nodes.append(chunk_id)
+                
+                # Edge from query to chunk
+                edges.append(ProvenanceEdge(
+                    source="query",
+                    target=chunk_id,
+                    type="retrieved_from",
+                    label="retrieved",
+                    weight=chunk.get("score", 1.0),
+                ))
+        
+        # Community nodes
+        community_nodes = []
+        for idx, report in enumerate(relevant_reports[:5]):  # Limit to 5 communities
+            community_id = f"community_{report.get('cluster_id', idx)}"
+            community_node = ProvenanceNode(
+                id=community_id,
+                type="community",
+                label=f"Community {idx+1}",
+                data={
+                    "cluster_id": report.get("cluster_id"),
+                    "summary": report.get("summary", "")[:100],
+                },
+                metadata=report.get("metadata", {}),
+            )
+            nodes.append(community_node)
+            community_nodes.append(community_id)
+            
+            # Edge from query to community (via seed entities)
+            edges.append(ProvenanceEdge(
+                source="query",
+                target=community_id,
+                type="matched_community",
+                label="matched",
+                weight=1.0,
+            ))
+            
+            # Summary node
+            summary_id = f"summary_{idx}"
+            summary_node = ProvenanceNode(
+                id=summary_id,
+                type="summary",
+                label=f"Summary {idx+1}",
+                data={
+                    "summary": report.get("summary", "")[:200],
+                    "themes": report.get("themes", []),
+                },
+                metadata=report.get("metadata", {}),
+            )
+            nodes.append(summary_node)
+            
+            # Edge from community to summary
+            edges.append(ProvenanceEdge(
+                source=community_id,
+                target=summary_id,
+                type="summarized_in",
+                label="summarized",
+                weight=1.0,
+            ))
+            
+            # Connect summary to answer (only first summary)
+            if idx == 0:
+                answer_id = "answer"
+                answer_node = ProvenanceNode(
+                    id=answer_id,
+                    type="answer",
+                    label="Answer",
+                    data={
+                        "answer": f"Based on {len(relevant_reports)} communities and {len(seed_entities)} entities",
+                    },
+                )
+                nodes.append(answer_node)
+                
+                edges.append(ProvenanceEdge(
+                    source=summary_id,
+                    target=answer_id,
+                    type="generated_from",
+                    label="generated",
+                    weight=1.0,
+                ))
+        
+        # Generate answer text
+        answer_text = f"Query: {query}\n\n"
+        answer_text += f"Found {len(seed_entities)} relevant entities in "
+        answer_text += f"{len(relevant_reports)} communities.\n\n"
+        
+        if relevant_reports:
+            answer_text += "Community summaries:\n"
+            for report in relevant_reports[:3]:
+                answer_text += f"- {report.get('summary', '')}\n"
+        
+        provenance = ProvenanceGraph(
+            nodes=nodes,
+            edges=edges,
+            query=query,
+            answer=answer_text,
+            metadata={
+                "seed_entities": seed_entities,
+                "entity_count": len(entities),
+                "relationship_count": len(relationships),
+            },
+        )
+        
+        return provenance
 
 
 def create_graphrag_retriever(
