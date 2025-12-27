@@ -42,15 +42,21 @@ DRG projesi, aşağıdaki temel amaçlara hizmet eder:
 - ✅ **DSPy Entegrasyonu**: Modern LLM'lerle çalışan güçlü extraction pipeline
 - ✅ **Enhanced Schema**: EntityType (properties, examples), RelationGroup (semantic grouping), Relation (description, detail) ile zengin şema tanımları
 - ✅ **Chunk-based KG Extraction**: Her chunk üzerinde bağımsız extraction, sonuçların birleştirilmesi
+- ✅ **Schema Validation**: Extraction sonuçlarının şemaya uygunluğunun otomatik kontrolü
 - ✅ **Otomatik LLM Konfigürasyonu**: Environment variable'lardan otomatik model ve API key yönetimi
 - ✅ **GraphRAG Pipeline**: Chunking → KG Extraction → Embedding → Clustering → Community Reports → Retrieval
 - ✅ **Clustering Desteği**: Louvain, Leiden, Spectral algoritmaları ile community detection
 - ✅ **Community Reports**: Her cluster için otomatik özet raporlar (top actors, top relationships, themes)
 - ✅ **Preset-based Chunking**: "graphrag" gibi preset'lerle kolay chunking konfigürasyonu
 - ✅ **Multi-Provider Desteği**: OpenAI, Gemini, Anthropic, OpenRouter, Perplexity, Ollama
+- ✅ **FastAPI Web Server**: RESTful API ve interaktif web UI ile KG görselleştirme
+- ✅ **Graph Visualization**: Cytoscape.js tabanlı interaktif graph görselleştirme (zoom, pan, community coloring)
+- ✅ **Query Provenance**: Query → chunks → community → summary → answer provenance chain tracking
+- ✅ **Neo4j Integration**: Knowledge graph'ı Neo4j'e senkronize etme ve persistence
 - ✅ **MCP API**: Agent interface için Model Context Protocol desteği
 - ✅ **Optimizer Desteği**: DSPy optimizer'ları ile iterative learning
 - ✅ **Self-loop Filtering**: KG'de self-loop edge'lerin otomatik filtrelenmesi
+- ✅ **Isolated Node Filtering**: Visualization'da bağlantısız node'ların otomatik filtrelenmesi
 
 ---
 
@@ -208,99 +214,148 @@ class Chunker:
 
 ### Klasör Yapısı
 
+Proje yapısı, **monolithic-modular** mimari prensibine uygun olarak düzenlenmiştir. Tüm kod `drg/` modülü altında toplanmış, ancak her bileşen bağımsız modüller halinde organize edilmiştir.
+
 ```
-DRG/
-├── drg/                    # Ana modül (monolithic codebase)
-│   ├── __init__.py         # Public API exports
-│   ├── schema.py           # Schema tanımları (Entity, Relation, DRGSchema)
-│   ├── extract.py          # DSPy extraction logic (KGExtractor)
-│   ├── graph.py            # Legacy KG class (backward compatibility)
-│   ├── cli.py              # CLI interface
-│   │
-│   ├── chunking/           # Chunking layer
-│   │   ├── __init__.py
-│   │   ├── strategies.py   # Chunking strategies (token, sentence, semantic)
-│   │   └── validators.py   # Chunk validation
-│   │
-│   ├── embedding/          # Embedding abstraction layer
-│   │   ├── __init__.py
-│   │   ├── providers.py    # Embedding provider interfaces
-│   │   ├── openai.py       # OpenAI provider
-│   │   ├── gemini.py       # Gemini provider
-│   │   ├── openrouter.py   # OpenRouter provider
-│   │   └── local.py         # Local model provider
-│   │
-│   ├── vector_store/       # Vector store abstraction
-│   │   ├── __init__.py
-│   │   ├── interface.py    # Vector store interface
-│   │   ├── chroma.py       # Chroma implementation
-│   │   ├── qdrant.py        # Qdrant implementation
-│   │   └── faiss.py         # FAISS implementation
-│   │
-│   ├── graph/              # Knowledge graph layer
-│   │   ├── __init__.py
-│   │   ├── schema.py       # DRG schema (existing)
-│   │   ├── extract.py      # Entity/relation extraction (existing)
-│   │   ├── kg_core.py      # EnhancedKG class (KGNode, KGEdge, Cluster)
-│   │   ├── visualization.py # KG visualization (Mermaid, PyVis)
-│   │   ├── community_report.py # Community report generation
-│   │   └── storage.py      # Graph storage abstraction
-│   │
-│   ├── retrieval/          # Retrieval layer
-│   │   ├── __init__.py
-│   │   ├── rag.py          # Classic RAG retrieval
-│   │   ├── graphrag.py     # GraphRAG retrieval (KG traversal)
-│   │   ├── drg_search.py   # DRG search algorithms
-│   │   └── hybrid.py        # Hybrid RAG + GraphRAG
-│   │
-│   ├── clustering/         # Clustering layer
-│   │   ├── __init__.py
-│   │   ├── algorithms.py   # Clustering algorithms (Louvain, Leiden, Spectral)
-│   │   └── summarization.py # Cluster summarization
-│   │
-│   ├── optimizer/          # DSPy optimizer module
-│   │   ├── __init__.py
-│   │   ├── optimizer.py    # DRGOptimizer class
-│   │   └── metrics.py      # Evaluation metrics
-│   │
-│   └── mcp_api.py          # MCP API interface
+DRG/                                    # Proje root dizini
 │
-├── docs/                   # Documentation (NO CODE)
-│   ├── project_complete_guide.md  # Bu dosya
-│   ├── chunking_strategy.md
-│   ├── schema_design.md
-│   ├── pipeline_overview.md
-│   ├── drg_search.md
-│   ├── clustering_summarization.md
-│   ├── optimizer_design.md
-│   └── mcp_integration.md
+├── 📦 drg/                             # Ana Python modülü (Core Library)
+│   │
+│   ├── 🎯 Core Components              # Temel bileşenler
+│   │   ├── __init__.py                 # Public API exports
+│   │   ├── schema.py                   # Schema tanımları (Entity, Relation, DRGSchema, EnhancedDRGSchema)
+│   │   ├── extract.py                  # DSPy-based KG extraction (KGExtractor, generate_schema_from_text)
+│   │   ├── graph.py                    # Legacy KG class (geriye dönük uyumluluk için)
+│   │   └── cli.py                      # Komut satırı arayüzü
+│   │
+│   ├── ✂️  chunking/                   # Metin Parçalama Katmanı
+│   │   ├── __init__.py
+│   │   ├── strategies.py               # Chunking stratejileri (token, sentence, semantic)
+│   │   └── validators.py               # Chunk doğrulama ve validasyon
+│   │
+│   ├── 🧮 embedding/                   # Embedding Sağlayıcıları
+│   │   ├── __init__.py
+│   │   ├── providers.py                # Embedding provider interface
+│   │   ├── openai.py                   # OpenAI embedding provider
+│   │   ├── gemini.py                   # Google Gemini embedding provider
+│   │   ├── openrouter.py               # OpenRouter embedding provider
+│   │   └── local.py                    # Local model provider (sentence-transformers)
+│   │
+│   ├── 💾 vector_store/                # Vektör Veritabanı Soyutlaması
+│   │   ├── __init__.py
+│   │   ├── interface.py                # Vector store interface
+│   │   ├── chroma.py                   # ChromaDB implementation
+│   │   ├── qdrant.py                   # Qdrant implementation
+│   │   ├── faiss.py                    # FAISS implementation
+│   │   └── factory.py                  # Factory pattern for vector stores
+│   │
+│   ├── 🕸️  graph/                      # Knowledge Graph Katmanı
+│   │   ├── __init__.py
+│   │   ├── kg_core.py                  # EnhancedKG, KGNode, KGEdge, Cluster sınıfları
+│   │   ├── visualization.py            # KG görselleştirme (Mermaid, PyVis)
+│   │   ├── visualization_adapter.py    # Web viz adapters (Cytoscape.js, vis-network, D3.js)
+│   │   ├── community_report.py         # Community report generation
+│   │   ├── neo4j_exporter.py           # Neo4j persistence layer
+│   │   ├── schema_generator.py         # Dataset-agnostic schema generation
+│   │   └── relationship_model.py       # Relationship type classification
+│   │
+│   ├── 🔍 retrieval/                   # Retrieval Katmanı
+│   │   ├── __init__.py
+│   │   ├── rag.py                      # Classic RAG retrieval (vector similarity)
+│   │   ├── graphrag.py                 # GraphRAG retrieval (KG traversal + community reports)
+│   │   ├── drg_search.py               # DRG search algorithms
+│   │   └── hybrid.py                   # Hybrid RAG + GraphRAG retriever
+│   │
+│   ├── 🔗 clustering/                  # Clustering Katmanı
+│   │   ├── __init__.py
+│   │   ├── algorithms.py               # Clustering algoritmaları (Louvain, Leiden, Spectral)
+│   │   └── summarization.py            # Cluster özetleme (community reports)
+│   │
+│   ├── 🎛️  optimizer/                  # DSPy Optimizer Modülü
+│   │   ├── __init__.py
+│   │   ├── optimizer.py                # DRGOptimizer class
+│   │   └── metrics.py                  # Evaluation metrics (precision, recall, F1)
+│   │
+│   ├── 🌐 api/                         # FastAPI Web Server
+│   │   ├── __init__.py
+│   │   ├── server.py                   # FastAPI app ve REST API endpoints
+│   │   ├── templates/                  # HTML templates
+│   │   │   └── index.html              # Cytoscape.js interaktif graph visualization UI
+│   │   └── static/                     # Static dosyalar (CSS, JavaScript)
+│   │
+│   └── mcp_api.py                      # Model Context Protocol (MCP) API interface
 │
-├── examples/               # Usage examples
-│   ├── graphrag_pipeline_example.py  # Tam GraphRAG pipeline
-│   ├── mcp_demo.py         # MCP API demo
-│   └── optimizer_demo.py   # Optimizer demo
+├── 📚 docs/                            # Dokümantasyon (KOD YOK, SADECE MARKDOWN)
+│   ├── PROJECT_OVERVIEW.md             # Bu dosya - Kapsamlı proje dokümantasyonu
+│   ├── pipeline_overview.md            # Pipeline mimarisi ve akış diyagramları
+│   ├── schema_design.md                # Schema tasarım prensipleri
+│   ├── chunking_strategy.md            # Chunking stratejileri ve best practices
+│   ├── drg_search.md                   # DRG search algoritmaları
+│   ├── clustering_summarization.md     # Clustering ve community report generation
+│   ├── optimizer_design.md             # DSPy optimizer entegrasyonu
+│   ├── relationship_model.md           # Relationship classification modeli
+│   └── mcp_integration.md              # MCP API entegrasyonu
 │
-├── tests/                  # Test suite
-│   ├── test_basic.py       # Temel testler (tüm provider'lar için)
-│   └── multi_dataset/
-│       └── evaluation.py   # Multi-dataset evaluation
+├── 💡 examples/                        # Kullanım Örnekleri
+│   ├── graphrag_pipeline_example.py    # Tam GraphRAG pipeline örneği (Ana örnek)
+│   ├── api_server_example.py           # FastAPI server başlatma örneği
+│   ├── mcp_demo.py                     # MCP API demo
+│   └── optimizer_demo.py               # DSPy optimizer demo
 │
-├── inputs/                  # Input dosyaları (sayı başta format)
-│   ├── 1example_text.txt
-│   ├── 1example_schema.json (opsiyonel - yoksa otomatik oluşturulur)
-│   ├── 2example_text.txt
-│   ├── 3example_text.txt
-│   └── 4example_text.txt
+├── 🧪 tests/                           # Test Suite
+│   ├── test_basic.py                   # Temel testler (tüm provider'lar için)
+│   └── multi_dataset/                  # Multi-dataset evaluation
+│       └── evaluation.py               # Çoklu veri seti değerlendirme testleri
 │
-├── outputs/                 # Generated outputs
-│   ├── 1example_schema.json
-│   ├── 1example_kg.json
-│   ├── 1example_community_reports.json
-│   └── 1example_summary.json
+├── 📥 inputs/                          # Giriş Dosyaları (Test Verileri)
+│   ├── 1example_text.txt               # Örnek 1: Metin dosyası
+│   ├── 1example_schema.json            # Örnek 1: Schema (opsiyonel - yoksa otomatik oluşturulur)
+│   ├── 2example_text.txt               # Örnek 2: Metin dosyası
+│   ├── 3example_text.txt               # Örnek 3: Metin dosyası
+│   ├── 3example_schema.json            # Örnek 3: Schema
+│   ├── 4example_text.txt               # Örnek 4: Metin dosyası
+│   └── 4example_schema.json            # Örnek 4: Schema
 │
-├── pyproject.toml          # Project configuration
-└── README.md               # Project README
+├── 📤 outputs/                         # Çıktı Dosyaları (Pipeline Sonuçları)
+│   ├── {example_name}_schema.json      # Oluşturulan/güncellenen schema
+│   ├── {example_name}_kg.json          # Knowledge Graph (EnhancedKG formatında)
+│   ├── {example_name}_community_reports.json  # Community/cluster raporları
+│   └── {example_name}_summary.json     # Pipeline özeti (istatistikler)
+│
+├── 🚀 Scripts                          # Yardımcı Scriptler
+│   ├── start_api_server.sh             # API server başlatma scripti (GEMINI_API_KEY otomatik export)
+│   └── restart_api_server.sh           # API server yeniden başlatma scripti (port 8000 temizleme)
+│
+├── 📄 Configuration & Docs             # Konfigürasyon ve Dokümantasyon Dosyaları
+│   ├── README.md                       # Proje ana README dosyası
+│   ├── README_API.md                   # API server dokümantasyonu
+│   ├── SETUP.md                        # Kurulum talimatları
+│   ├── QUICK_START.md                  # Hızlı başlangıç rehberi
+│   ├── pyproject.toml                  # Proje konfigürasyonu (Python packaging)
+│   ├── requirements.txt                # Python bağımlılıkları
+│   └── LICENSE                         # Lisans dosyası
+│
+└── uv.lock                             # UV package manager lock file (opsiyonel)
 ```
+
+#### Yapı Açıklamaları
+
+**📦 drg/**: Ana Python modülü. Tüm core functionality burada toplanmıştır. Modüler yapı, ancak tek bir paket olarak deploy edilir (monolithic-modular mimari).
+
+**🎯 Core Components**: Schema tanımları, extraction logic, CLI interface gibi temel bileşenler.
+
+**Katmanlar (Layers)**: Pipeline'ın adımlarına karşılık gelen modüller:
+- **chunking/**: Metin parçalama
+- **embedding/**: Vektörleştirme
+- **graph/**: KG oluşturma ve yönetimi
+- **retrieval/**: Bilgi erişimi (RAG, GraphRAG)
+- **clustering/**: Topluluk tespiti
+
+**🌐 api/**: FastAPI web server ve interaktif graph visualization UI.
+
+**📚 docs/**: Teknik dokümantasyon. Kod içermez, sadece tasarım ve mimari dokümantasyonu.
+
+**💡 examples/**: Kullanım örnekleri. Yeni kullanıcılar için başlangıç noktası.
 
 ### Modül Açıklamaları
 
@@ -1203,6 +1258,79 @@ schema = generate_schema_from_text(text)
 # - entity_types: Properties ve examples ile zengin entity tanımları
 # - relation_groups: Semantic olarak gruplandırılmış relation'lar
 # - Her relation için description (bağlantı sebebi) ve detail (bağlantı detayı)
+```
+
+### Web API ve Visualization
+
+DRG, FastAPI tabanlı bir web server ve interaktif graph visualization UI sunar:
+
+#### API Server Başlatma
+
+```python
+from drg.api import DRGAPIServer
+from drg.graph import EnhancedKG
+
+# KG'yi yükle
+kg = EnhancedKG.from_json_file("outputs/4example_kg.json")
+
+# API server oluştur ve başlat
+server = DRGAPIServer(kg=kg)
+server.run(host="0.0.0.0", port=8000)
+```
+
+Veya script ile:
+
+```bash
+# En son güncellenen KG ile otomatik başlat
+python examples/api_server_example.py
+
+# Belirli bir example ile başlat
+python examples/api_server_example.py 4example
+
+# Shell script ile (GEMINI_API_KEY otomatik export edilir)
+./start_api_server.sh 4example
+```
+
+#### API Endpoints
+
+- `GET /` - Web UI (interaktif graph visualization)
+- `GET /api/graph` - Full graph data (JSON)
+- `GET /api/graph/stats` - Graph statistics
+- `GET /api/communities` - All community/cluster data
+- `GET /api/visualization/{format}` - Visualization data (cytoscape, vis-network, d3)
+- `POST /api/query` - Execute query ve provenance chain al
+- `GET /api/provenance/{provenance_id}` - Query provenance chain
+- `POST /api/neo4j/sync` - Neo4j'e sync
+- `GET /api/neo4j/stats` - Neo4j statistics
+
+#### Web UI Özellikleri
+
+- **Interactive Graph**: Cytoscape.js ile zoom, pan, drag
+- **Community Coloring**: Cluster'lara göre node renklendirme
+- **Node/Edge Details**: Hover ile detay bilgileri
+- **Multiple Layouts**: breadthfirst, concentric, cose, grid, circle
+- **Query Interface**: Query girme ve sonuç görüntüleme
+- **Provenance Visualization**: Query sonuçlarının provenance chain'i
+
+#### Neo4j Integration
+
+```python
+from drg.graph import Neo4jConfig, Neo4jExporter
+
+# Neo4j konfigürasyonu
+config = Neo4jConfig(
+    uri="bolt://localhost:7687",
+    user="neo4j",
+    password="password"
+)
+
+# Exporter oluştur ve sync et
+exporter = Neo4jExporter(config)
+exporter.sync_kg(enhanced_kg, clear_existing=True)
+
+# Graph statistics
+stats = exporter.get_graph_stats()
+print(f"Nodes: {stats['nodes']}, Edges: {stats['edges']}")
 ```
 
 ---

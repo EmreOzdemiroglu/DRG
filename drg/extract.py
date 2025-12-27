@@ -151,10 +151,22 @@ class KGExtractor(dspy.Module):
         # Parse JSON string from DSPy output
         import json
         entities_str = entity_result.entities if hasattr(entity_result, 'entities') else "[]"
+        
+        # Clean markdown code blocks if present
+        if isinstance(entities_str, str):
+            entities_str = entities_str.strip()
+            if entities_str.startswith("```json"):
+                entities_str = entities_str[7:]  # Remove ```json
+            elif entities_str.startswith("```"):
+                entities_str = entities_str[3:]   # Remove ```
+            if entities_str.endswith("```"):
+                entities_str = entities_str[:-3]  # Remove trailing ```
+            entities_str = entities_str.strip()
+        
         try:
             entities = json.loads(entities_str) if isinstance(entities_str, str) else entities_str
         except (json.JSONDecodeError, TypeError):
-            logger.warning(f"Failed to parse entities JSON: {entities_str}")
+            logger.warning(f"Failed to parse entities JSON: {entities_str[:200]}")  # Log only first 200 chars
             entities = []
         
         # Convert to list of tuples
@@ -198,10 +210,22 @@ class KGExtractor(dspy.Module):
         
         # Parse JSON string from DSPy output
         relations_str = relation_result.relations if hasattr(relation_result, 'relations') else "[]"
+        
+        # Clean markdown code blocks if present
+        if isinstance(relations_str, str):
+            relations_str = relations_str.strip()
+            if relations_str.startswith("```json"):
+                relations_str = relations_str[7:]  # Remove ```json
+            elif relations_str.startswith("```"):
+                relations_str = relations_str[3:]   # Remove ```
+            if relations_str.endswith("```"):
+                relations_str = relations_str[:-3]  # Remove trailing ```
+            relations_str = relations_str.strip()
+        
         try:
             relations = json.loads(relations_str) if isinstance(relations_str, str) else relations_str
         except (json.JSONDecodeError, TypeError):
-            logger.warning(f"Failed to parse relations JSON: {relations_str}")
+            logger.warning(f"Failed to parse relations JSON: {relations_str[:200]}")  # Log only first 200 chars
             relations = []
         
         # Convert to list of tuples
@@ -479,15 +503,85 @@ class SchemaGeneration(dspy.Signature):
   "auto_discovery": true
 }
 
-Requirements:
-- Extract ALL relevant entity types from the text
-- For each entity type, provide 3-5 real examples from the text
-- Add meaningful properties that characterize each entity type
-- Group related relations semantically (e.g., 'production', 'employment', 'location', 'temporal')
-- For each relation, provide:
-  * description: The reason/type of connection (what kind of relationship)
-  * detail: Specific detail about why/how entities are connected
-- Return ONLY valid JSON, no extra text"""
+**CRITICAL REQUIREMENTS FOR RICH KNOWLEDGE GRAPHS:**
+
+1. **Entity Types**:
+   - Extract ALL relevant entity types from the text (not just main entities)
+   - Include supporting entities: locations, technologies, processes, organizations, etc.
+   - For each entity type, provide 3-5 real examples from the text
+   - Add meaningful properties that characterize each entity type
+
+2. **Relations - MOST IMPORTANT**:
+   - **DO NOT create a star-shaped graph** (all relations from one central entity)
+   - **Create a rich, interconnected graph** with relations between ALL entity types
+   - For EACH pair of entity types, consider what relationships might exist between them
+   - Examples of entity-to-entity relations:
+     * Vehicle → Vehicle: "Succeeded_By", "Shares_Platform_With", "Competes_With", "Similar_To"
+     * Technology → Technology: "Supports", "Integrates_With", "Enhances", "Depends_On", "Works_With"
+     * Vehicle → Technology: "Equipped_With", "Has_Feature", "Receives", "Uses"
+     * Technology → Vehicle: "Enables", "Installed_In", "Used_By"
+     * Manufacturing → Technology: "Produces", "Uses", "Develops"
+     * Technology → Manufacturing: "Used_In", "Enables"
+     * Manufacturing → Location: "Located_In", "Operates_In"
+     * Vehicle → Manufacturing: "Produced_At", "Manufactured_In"
+     * Manufacturing → Vehicle: "Produces", "Manufactures"
+     * Entity → Industry: "Impacts", "Transforms", "Disrupts"
+     * Industry → Industry: "Part_Of", "Related_To", "Competes_With"
+
+3. **Relation Groups**:
+   - Group related relations semantically (e.g., 'production', 'technology', 'location', 'temporal', 'hierarchical', 'social', 'professional', 'spatial', 'conceptual')
+   - Each group should contain multiple relations covering different entity type pairs
+   - Aim for 5-8 relation groups with 4-10 relations each
+   - Total target: 30-50+ relations across all groups
+
+4. **Relation Details**:
+   - For each relation, provide:
+     * description: The reason/type of connection (what kind of relationship)
+     * detail: Specific detail about why/how entities are connected in this way
+
+5. **Graph Structure - CRITICAL**:
+   - Target: 60-70% of relations should be BETWEEN entities (not from central entity)
+   - Include diverse relation patterns: hierarchical, sequential, dependency, spatial, temporal, functional, social, professional
+   - For EVERY pair of entity types, consider what relationships might exist between them
+   - Create a rich, interconnected web - NOT a star-shaped graph
+   - Ensure the schema supports extracting a comprehensive, meaningful knowledge graph
+
+6. **Comprehensive Relation Coverage**:
+   - **Person ↔ Person**: Collaborates_With, Works_With, Assists, Mentors, Reports_To, Related_To, Opposes
+   - **Person ↔ Organization**: Works_At, Leads, Member_Of, Founded, Owns, Opposes, Monitored_By
+   - **Organization ↔ Organization**: Competes_With, Collaborates_With, Acquires, Merges_With, Opposes, Partners_With
+   - **Technology ↔ Technology**: Based_On, Evolved_From, Integrates_With, Supports, Replaces, Contains, Enables, Works_With
+   - **Entity ↔ Location**: Located_In, Works_In, Operates_In, Relocated_To, Houses, Near, Beneath, Above
+   - **Entity ↔ Concept**: Represents, Promotes, Enhances, Threatens, Protects, Ensures, Fights_Against, Related_To, Contradicts
+   - **Technology ↔ Person**: Developed_By, Used_By, Benefits, Controlled_By, Monitored_By
+   - **Technology ↔ Organization**: Developed_At, Owned_By, Deployed_At, Seeks_To_Control
+
+7. **Schema Completeness**:
+   - Aim for 30-50+ relations total across 4-8 relation groups
+   - Each entity type should participate in multiple relation types (both as source and target)
+   - Include bidirectional thinking: if A → B exists, consider if B → A also makes sense
+
+**Example Rich Schema Structure:**
+If text mentions a company with products, technologies, and locations:
+- Entity Types: Company, Product, Technology, Location, Manufacturing, Person, Industry
+- Relations (40+):
+  * Company → Product (Introduced, Produces, Markets)
+  * Company → Technology (Develops, Owns, Uses, Deploys)
+  * Company → Location (Located_In, Operates_In, Expands_To)
+  * Product → Product (Succeeded_By, Similar_To, Competes_With, Shares_Platform_With)
+  * Product → Technology (Equipped_With, Uses, Requires, Powered_By)
+  * Technology → Technology (Supports, Integrates_With, Based_On, Enables, Replaces)
+  * Manufacturing → Location (Located_In, Operates_In)
+  * Manufacturing → Product (Produces, Manufactures)
+  * Manufacturing → Technology (Uses, Develops, Produces)
+  * Product → Location (Produced_In, Sold_In, Available_In)
+  * Person → Company (Works_At, Founded, Leads, Owns)
+  * Person → Product (Designed_By, Developed_By)
+  * Person → Technology (Invented_By, Uses, Benefits)
+  * Company → Industry (Part_Of, Dominates, Transforms)
+  ... and many more to create a rich graph
+
+Return ONLY valid JSON, no extra text or markdown formatting."""
     )
 
 
@@ -510,10 +604,25 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
     _configure_llm_auto()
     
     # Metni örnekleme için kısalt (çok uzunsa - şema oluşturmak için yeterli context için)
-    # İlk ve son kısmı alarak daha iyi bir örnek oluştur
-    if len(text) > 8000:
+    # İlk, orta ve son kısmı alarak daha kapsamlı bir örnek oluştur (entity'ler arası ilişkileri yakalamak için)
+    if len(text) > 15000:
+        # Çok uzun metinler için: başlangıç, ilk orta, ikinci orta, son (4 parça)
+        part_size = len(text) // 4
+        sample_text = (
+            text[:3500] + "\n\n[... truncated ...]\n\n" +
+            text[part_size:part_size+3500] + "\n\n[... truncated ...]\n\n" +
+            text[part_size*2:part_size*2+3500] + "\n\n[... truncated ...]\n\n" +
+            text[-3500:]
+        )
+        logger.info(f"Metin çok uzun ({len(text)} karakter), dört parça kullanılıyor (başlangıç, orta-1, orta-2, son)...")
+    elif len(text) > 12000:
+        # Üç parça al: başlangıç, orta, son (entity'ler arası ilişkiler genelde orta kısımda olur)
+        part_size = len(text) // 3
+        sample_text = text[:4000] + "\n\n[... truncated ...]\n\n" + text[part_size:part_size+4000] + "\n\n[... truncated ...]\n\n" + text[-4000:]
+        logger.info(f"Metin uzun ({len(text)} karakter), üç parça kullanılıyor (başlangıç, orta, son)...")
+    elif len(text) > 8000:
         sample_text = text[:4000] + "\n\n[... truncated ...]\n\n" + text[-4000:]
-        logger.info(f"Metin çok uzun ({len(text)} karakter), ilk ve son 4000 karakteri kullanılıyor...")
+        logger.info(f"Metin uzun ({len(text)} karakter), ilk ve son 4000 karakteri kullanılıyor...")
     else:
         sample_text = text
     
@@ -548,6 +657,19 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
     
     # Parse JSON schema
     schema_str = schema_result.generated_schema if hasattr(schema_result, 'generated_schema') else "{}"
+    
+    # Clean markdown code blocks if present
+    if isinstance(schema_str, str):
+        # Remove markdown code block markers
+        schema_str = schema_str.strip()
+        if schema_str.startswith("```json"):
+            schema_str = schema_str[7:]  # Remove ```json
+        elif schema_str.startswith("```"):
+            schema_str = schema_str[3:]   # Remove ```
+        if schema_str.endswith("```"):
+            schema_str = schema_str[:-3]  # Remove trailing ```
+        schema_str = schema_str.strip()
+    
     try:
         schema_data = json.loads(schema_str) if isinstance(schema_str, str) else schema_str
     except (json.JSONDecodeError, TypeError) as e:
@@ -681,7 +803,41 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
             relation_groups=relation_groups,
             auto_discovery=True
         )
-        logger.info(f"Enhanced schema oluşturuldu: {len(entity_types)} entity type, {len(relation_groups)} relation group")
+        
+        # Schema kalitesi kontrolü - entity'ler arası ilişki oranını kontrol et
+        entity_names = {et.name for et in entity_types}
+        all_relations = []
+        first_entity = list(entity_names)[0] if entity_names else None
+        central_entity_relations = 0
+        cross_entity_relations = 0
+        
+        for rg in relation_groups:
+            for r in rg.relations:
+                all_relations.append(r)
+                # İlk entity type'ı merkezi entity olarak kabul et (genelde Company/Organization)
+                if r.src == first_entity:
+                    central_entity_relations += 1
+                else:
+                    cross_entity_relations += 1
+        
+        total_relations = len(all_relations)
+        total_relations_count = sum(len(rg.relations) for rg in relation_groups)
+        
+        if total_relations > 0:
+            cross_ratio = cross_entity_relations / total_relations
+            if cross_ratio < 0.4:
+                logger.warning(
+                    f"⚠️  Schema kalite uyarısı: Entity'ler arası ilişki oranı düşük ({cross_ratio:.1%}). "
+                    f"Schema çoğunlukla merkezi entity'den çıkan ilişkiler içeriyor. "
+                    f"KG zenginliği için daha fazla cross-entity relation eklenmeli. "
+                    f"Önerilen: %60-70 cross-entity relations."
+                )
+            elif cross_ratio >= 0.6:
+                logger.info(f"✅ Schema kalitesi iyi: {cross_ratio:.1%} cross-entity relations ({cross_entity_relations}/{total_relations})")
+            else:
+                logger.info(f"ℹ️  Schema kalitesi orta: {cross_ratio:.1%} cross-entity relations ({cross_entity_relations}/{total_relations})")
+        
+        logger.info(f"Enhanced schema oluşturuldu: {len(entity_types)} entity type, {len(relation_groups)} relation group, {total_relations_count} relation")
         return schema
     except ValueError as e:
         logger.error(f"Schema validation hatası: {e}")

@@ -39,6 +39,14 @@ from .graph import (
     # Community Report
     CommunityReport,
     CommunityReportGenerator,
+    # Neo4j Exporter
+    Neo4jConfig,
+    Neo4jExporter,
+    # Visualization Adapter
+    ProvenanceNode,
+    ProvenanceEdge,
+    ProvenanceGraph,
+    VisualizationAdapter,
 )
 
 # Chunking
@@ -155,6 +163,14 @@ __all__ = [
     # Community Report
     "CommunityReport",
     "CommunityReportGenerator",
+    # Neo4j Exporter
+    "Neo4jConfig",
+    "Neo4jExporter",
+    # Visualization Adapter
+    "ProvenanceNode",
+    "ProvenanceEdge",
+    "ProvenanceGraph",
+    "VisualizationAdapter",
     # Chunking
     "ChunkingStrategy",
     "TokenBasedChunker",
@@ -206,4 +222,6 @@ __all__ = [
     "MCPResponse",
     "MCPErrorCode",
     "create_mcp_api",
+    # API Server (optional - requires fastapi)
+    # "DRGAPIServer",  # Uncomment if using API server
 ]

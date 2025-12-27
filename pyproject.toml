@@ -8,6 +8,12 @@ license = {text = "MIT"}
 authors = [{name = "Your Name"}]
 dependencies = [
     "dspy>=2.4.0",
+    # Optional: Graph Persistence (Neo4j)
+    "neo4j>=5.0.0",
+    # Optional: API Server
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.scripts]
