@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .schema import Entity, Relation, DRGSchema
+from .schema import Entity, Relation, DRGSchema, load_schema_from_json
 from .extract import extract_typed
 from .graph import KG
 
@@ -90,14 +90,19 @@ Examples:
     
     # Load schema
     if args.schema:
-        schema_path = Path(args.schema)
-        if not schema_path.exists():
-            print(f"Error: Schema file not found: {args.schema}", file=sys.stderr)
+        try:
+            schema = load_schema_from_json(args.schema)
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
-        # TODO: Load custom schema from JSON
-        # For now, use default
-        print("Warning: Custom schema loading not yet implemented, using default schema", file=sys.stderr)
-        schema = create_default_schema()
+        except ValueError as e:
+            print(f"Error: Invalid schema file: {e}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: Failed to load schema: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
     else:
         schema = create_default_schema()
     

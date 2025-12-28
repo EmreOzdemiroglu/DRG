@@ -12,6 +12,7 @@ Endpoints:
 """
 
 import logging
+import sys
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
@@ -236,35 +237,50 @@ def create_app(
         if retriever is None:
             raise HTTPException(
                 status_code=404,
-                detail="GraphRAG retriever not configured"
+                detail="GraphRAG retriever not configured. Please set OPENROUTER_API_KEY environment variable."
             )
         
-        # Execute retrieval
-        retrieval_context = retriever.retrieve(
-            query=request.query,
-            k_entities=request.k_entities,
-            k_reports=request.k_reports,
-            k_context_chunks=request.k_context_chunks,
-        )
-        
-        # Generate provenance graph (simplified - in production, would use LLM to generate answer)
-        provenance = _create_provenance_from_retrieval(request.query, retrieval_context)
-        
-        # Store provenance
-        provenance_id = f"provenance_{len(app.state.provenance_store)}"
-        app.state.provenance_store[provenance_id] = provenance
-        
-        return {
-            "query": request.query,
-            "answer": provenance.answer,
-            "provenance_id": provenance_id,
-            "retrieval_context": {
-                "seed_entities": retrieval_context.seed_entities,
-                "entities": retrieval_context.entities,
-                "relationships": retrieval_context.relationships,
-                "community_reports": retrieval_context.community_reports,
-            },
-        }
+        try:
+            # Execute retrieval
+            retrieval_context = retriever.retrieve(
+                query=request.query,
+                k_entities=request.k_entities,
+                k_reports=request.k_reports,
+                k_context_chunks=request.k_context_chunks,
+            )
+            
+            # Generate provenance graph (simplified - in production, would use LLM to generate answer)
+            provenance = _create_provenance_from_retrieval(request.query, retrieval_context)
+            
+            # Store provenance
+            provenance_id = f"provenance_{len(app.state.provenance_store)}"
+            app.state.provenance_store[provenance_id] = provenance
+            
+            return {
+                "query": request.query,
+                "answer": provenance.answer,
+                "provenance_id": provenance_id,
+                "retrieval_context": {
+                    "seed_entities": retrieval_context.seed_entities,
+                    "entities": retrieval_context.entities,
+                    "relationships": retrieval_context.relationships,
+                    "community_reports": retrieval_context.community_reports,
+                },
+            }
+        except Exception as e:
+            import traceback
+            error_detail = str(e)
+            error_traceback = traceback.format_exc()
+            # Log to console (visible in terminal)
+            print(f"\n❌ QUERY ERROR: {error_detail}", file=sys.stderr)
+            print(f"Traceback:\n{error_traceback}", file=sys.stderr)
+            logger.error(f"Query execution failed: {error_detail}", exc_info=True)
+            logger.error(f"Traceback: {error_traceback}")
+            # Return detailed error for debugging
+            raise HTTPException(
+                status_code=500,
+                detail=f"Query failed: {error_detail}"
+            )
     
     @app.get("/api/provenance/{provenance_id}")
     async def get_provenance(
@@ -392,8 +408,9 @@ def _create_provenance_from_retrieval(
     
     # Chunk nodes
     chunk_nodes = []
-    if retrieval_context.context_chunks:
-        for idx, chunk in enumerate(retrieval_context.context_chunks[:5]):  # Limit to 5 chunks
+    context_chunks = getattr(retrieval_context, 'context_chunks', None) or []
+    if context_chunks:
+        for idx, chunk in enumerate(context_chunks[:5]):  # Limit to 5 chunks
             chunk_id = f"chunk_{idx}"
             chunk_node = ProvenanceNode(
                 id=chunk_id,
@@ -420,7 +437,8 @@ def _create_provenance_from_retrieval(
     
     # Community nodes
     community_nodes = []
-    for idx, report in enumerate(retrieval_context.community_reports[:5]):  # Limit to 5 communities
+    community_reports = getattr(retrieval_context, 'community_reports', None) or []
+    for idx, report in enumerate(community_reports[:5]):  # Limit to 5 communities
         community_id = f"community_{report.get('cluster_id', idx)}"
         community_node = ProvenanceNode(
             id=community_id,
@@ -475,7 +493,7 @@ def _create_provenance_from_retrieval(
                 type="answer",
                 label="Answer",
                 data={
-                    "answer": f"Based on {len(retrieval_context.community_reports)} communities and {len(retrieval_context.seed_entities)} entities",
+                    "answer": f"Based on {len(community_reports)} communities and {len(getattr(retrieval_context, 'seed_entities', []))} entities",
                 },
             )
             nodes.append(answer_node)
@@ -490,12 +508,13 @@ def _create_provenance_from_retrieval(
     
     # Generate answer text
     answer_text = f"Query: {query}\n\n"
-    answer_text += f"Found {len(retrieval_context.seed_entities)} relevant entities in "
-    answer_text += f"{len(retrieval_context.community_reports)} communities.\n\n"
+    seed_entities = getattr(retrieval_context, 'seed_entities', [])
+    answer_text += f"Found {len(seed_entities)} relevant entities in "
+    answer_text += f"{len(community_reports)} communities.\n\n"
     
-    if retrieval_context.community_reports:
+    if community_reports:
         answer_text += "Community summaries:\n"
-        for report in retrieval_context.community_reports[:3]:
+        for report in community_reports[:3]:
             answer_text += f"- {report.get('summary', '')}\n"
     
     provenance = ProvenanceGraph(
@@ -504,9 +523,9 @@ def _create_provenance_from_retrieval(
         query=query,
         answer=answer_text,
         metadata={
-            "seed_entities": retrieval_context.seed_entities,
-            "entity_count": len(retrieval_context.entities),
-            "relationship_count": len(retrieval_context.relationships),
+            "seed_entities": seed_entities,
+            "entity_count": len(getattr(retrieval_context, 'entities', [])),
+            "relationship_count": len(getattr(retrieval_context, 'relationships', [])),
         },
     )
     

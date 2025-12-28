@@ -52,12 +52,14 @@ class DRGOptimizer:
         self,
         schema: DRGSchema | EnhancedDRGSchema,
         config: Optional[OptimizerConfig] = None,
+        training_examples: Optional[List[Dict[str, Any]]] = None,
     ):
         """Initialize DRG optimizer.
         
         Args:
             schema: DRG schema for extraction
             config: Optimizer configuration
+            training_examples: Optional training examples (can also be added via add_training_example)
         """
         self.schema = schema
         self.config = config or OptimizerConfig()
@@ -69,7 +71,7 @@ class DRGOptimizer:
         self.optimized_extractor: Optional[KGExtractor] = None
         
         # Training examples
-        self.training_examples: List[Dict[str, Any]] = []
+        self.training_examples: List[Dict[str, Any]] = training_examples if training_examples is not None else []
         
         # Evaluation history
         self.evaluation_history: List[EvaluationResult] = []
@@ -133,9 +135,9 @@ class DRGOptimizer:
         trainset = self._prepare_trainset()
         
         # Optimize using DSPy optimizer
+        # DSPy optimizer'lar compile() metodu ile optimize eder
+        # BootstrapFewShot, MIPRO, COPRO hepsi compile() kullanır
         try:
-            # DSPy optimizer'lar compile() metodu ile optimize eder
-            # BootstrapFewShot, MIPRO, COPRO hepsi compile() kullanır
             self.optimized_extractor = optimizer.compile(
                 student=self.base_extractor,
                 trainset=trainset,
@@ -144,9 +146,12 @@ class DRGOptimizer:
             logger.info("Optimization completed successfully")
         except Exception as e:
             logger.error(f"Optimization failed: {e}")
-            logger.warning("Falling back to base extractor")
-            # Fallback: Use base extractor but store training examples for future use
-            self.optimized_extractor = self.base_extractor
+            # Don't silently fallback - raise the error so user knows optimization failed
+            # This is important for debugging and understanding why optimization didn't work
+            raise RuntimeError(
+                f"DSPy optimization failed: {e}. "
+                "Check your training examples format and metric function."
+            ) from e
         
         return self.optimized_extractor
     
@@ -191,13 +196,22 @@ class DRGOptimizer:
         return dspy.LabeledFewShot(k=self.config.max_labeled_demos)
     
     def _prepare_trainset(self) -> List[dspy.Example]:
-        """Prepare training set for DSPy."""
+        """Prepare training set for DSPy.
+        
+        Important: The trainset format must match the output format of KGExtractor.forward().
+        KGExtractor.forward() returns a dspy.Prediction with 'entities' and 'relations' fields,
+        where both are lists of tuples. This matches the expected format from training examples.
+        """
         trainset = []
         for example in self.training_examples:
+            # Create dspy.Example with correct format
+            # Input: text (str)
+            # Output: entities (List[Tuple[str, str]]), relations (List[Tuple[str, str, str]])
+            # This matches KGExtractor.forward() return type
             trainset.append(dspy.Example(
                 text=example["text"],
-                entities=example["expected_entities"],
-                relations=example["expected_relations"],
+                entities=example["expected_entities"],  # List[Tuple[str, str]]
+                relations=example["expected_relations"],  # List[Tuple[str, str, str]]
             ).with_inputs("text"))
         return trainset
     

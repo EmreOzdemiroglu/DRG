@@ -8,12 +8,8 @@ This example demonstrates how to:
 4. Access the web UI and API endpoints
 
 Usage:
-    # Set API key as environment variable (Gemini - önerilen)
-    export GEMINI_API_KEY=AIzaSy...
-    python examples/api_server_example.py
-    
-    # Or use OpenAI (alternatif)
-    export OPENAI_API_KEY=sk-or-v1-...
+    # Set OpenRouter API key as environment variable (önerilen)
+    export OPENROUTER_API_KEY=sk-or-v1-...
     python examples/api_server_example.py
     
     # Or set Neo4j credentials (optional)
@@ -165,29 +161,21 @@ def main():
     print("\n2. Creating embedding provider...")
     retriever = None
     
-    # Check for API key (try Gemini first, then OpenAI)
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
+    # Check for API key (OpenRouter - primary choice)
+    openrouter_key = os.getenv("OPENROUTER_API_KEY")
     
-    if not gemini_key and not openai_key:
-        print("   ⚠️  GEMINI_API_KEY or OPENAI_API_KEY environment variable not set")
-        print("   ℹ️  Set it with: export GEMINI_API_KEY=AIzaSy... or export OPENAI_API_KEY=sk-...")
+    if not openrouter_key:
+        print("   ⚠️  OPENROUTER_API_KEY environment variable not set")
+        print("   ℹ️  Set it with: export OPENROUTER_API_KEY=sk-or-v1-...")
         print("   ℹ️  API server will work but query functionality will be limited")
     else:
         try:
-            # Try Gemini first if available, otherwise OpenAI
-            if gemini_key:
-                print("   ℹ️  Using Gemini embedding provider")
-                embedding_provider = create_embedding_provider(
-                    provider="gemini",
-                    model="models/embedding-001",
-                )
-            else:
-                print("   ℹ️  Using OpenAI embedding provider")
-                embedding_provider = create_embedding_provider(
-                    provider="openai",
-                    model="text-embedding-3-small",
-                )
+            # Use OpenRouter embedding provider
+            print("   ℹ️  Using OpenRouter embedding provider")
+            embedding_provider = create_embedding_provider(
+                provider="openrouter",
+                model="openai/text-embedding-3-small",
+            )
             print("   ✅ Embedding provider created")
             
             # Add embeddings to entities

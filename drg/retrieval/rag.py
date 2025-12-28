@@ -192,8 +192,9 @@ class RAGRetriever:
         filters = {}
         
         if entity_filter:
-            # Note: This is a simplified filter - actual implementation
-            # would depend on vector store's filtering capabilities
+            # Note: Entity filtering support depends on vector store capabilities
+            # ChromaDB, Qdrant, and Pinecone support metadata filtering
+            # This is a basic implementation - advanced filtering can be extended
             filters["entities"] = {"$in": entity_filter}
         
         if topic_filter:

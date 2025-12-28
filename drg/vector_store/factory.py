@@ -21,6 +21,19 @@ def create_vector_store(
     
     Returns:
         VectorStore instance
+    
+    Examples:
+        >>> # ChromaDB (default)
+        >>> store = create_vector_store("chroma", collection_name="my_chunks")
+        
+        >>> # Qdrant
+        >>> store = create_vector_store("qdrant", collection_name="my_chunks", url="http://localhost:6333")
+        
+        >>> # Pinecone
+        >>> store = create_vector_store("pinecone", index_name="my-index", api_key="...", dimension=1536)
+        
+        >>> # FAISS
+        >>> store = create_vector_store("faiss", collection_name="my_chunks", dimension=1536, persist_directory="./faiss_index")
     """
     store_type_lower = store_type.lower()
     
@@ -32,17 +45,45 @@ def create_vector_store(
         )
     
     elif store_type_lower == "qdrant":
-        # TODO: Implement QdrantVectorStore
-        raise NotImplementedError("Qdrant vector store not yet implemented")
+        try:
+            from .qdrant import QdrantVectorStore
+        except ImportError:
+            raise ImportError(
+                "Qdrant vector store requires qdrant-client. "
+                "Install with: pip install qdrant-client or pip install drg[qdrant]"
+            )
+        return QdrantVectorStore(
+            collection_name=collection_name,
+            **kwargs
+        )
     
     elif store_type_lower == "pinecone":
-        # TODO: Implement PineconeVectorStore
-        raise NotImplementedError("Pinecone vector store not yet implemented")
+        try:
+            from .pinecone import PineconeVectorStore
+        except ImportError:
+            raise ImportError(
+                "Pinecone vector store requires pinecone-client. "
+                "Install with: pip install pinecone-client or pip install drg[pinecone]"
+            )
+        return PineconeVectorStore(
+            collection_name=collection_name,
+            **kwargs
+        )
     
     elif store_type_lower == "faiss":
-        # TODO: Implement FAISSVectorStore
-        raise NotImplementedError("FAISS vector store not yet implemented")
+        try:
+            from .faiss import FAISSVectorStore
+        except ImportError:
+            raise ImportError(
+                "FAISS vector store requires faiss-cpu or faiss-gpu. "
+                "Install with: pip install faiss-cpu or pip install drg[faiss]"
+            )
+        return FAISSVectorStore(
+            collection_name=collection_name,
+            persist_directory=persist_directory,
+            **kwargs
+        )
     
     else:
-        raise ValueError(f"Unknown vector store type: {store_type}")
+        raise ValueError(f"Unknown vector store type: {store_type}. Supported types: chroma, qdrant, pinecone, faiss")
 

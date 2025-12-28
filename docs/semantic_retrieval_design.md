@@ -139,7 +139,7 @@ EmbeddingProvider:
 #### 3.1.2 Qdrant
 
 **Özellikler:**
-- **Performance**: Yüksek performans, production-ready
+- **Performance**: Yüksek performans, production ortamlarında kullanıma uygun
 - **Scalability**: Distributed, horizontal scaling
 - **Advanced Features**: Payload filtering, geo-search
 - **Cost**: Self-hosted (free) veya cloud (paid)

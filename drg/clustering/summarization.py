@@ -42,8 +42,8 @@ class ClusterSummarizer:
             try:
                 import dspy
                 self.dspy = dspy
-                # Configure DSPy if needed
-                # This is a placeholder - actual LLM config should be done elsewhere
+                # Note: LLM configuration should be done via drg.config.configure_lm()
+                # or environment variables, not here in the summarizer
             except ImportError:
                 logger.warning("DSPy not available, falling back to template-based summarization")
                 self.use_llm = False
@@ -126,7 +126,16 @@ class ClusterSummarizer:
         cluster: Cluster,
         graph=None,
     ) -> ClusterSummary:
-        """LLM-based summarization (placeholder - requires DSPy setup)."""
+        """LLM-based summarization using DSPy.
+        
+        Note: This is currently a placeholder implementation. LLM-based summarization
+        would require DSPy signature definition and proper LLM configuration.
+        For now, falls back to template-based summarization which provides good
+        results for most use cases.
+        
+        Future enhancement: Implement DSPy-based summarization with proper signature
+        and few-shot examples for better cluster summaries.
+        """
         # For now, fall back to template-based
         logger.warning("LLM summarization not fully implemented, using template-based")
         return self._template_summarize(cluster, graph)

@@ -2,7 +2,9 @@
 Declarative schema definitions for DRG - Signature-like structure.
 """
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Union
+import json
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -252,3 +254,79 @@ class EnhancedDRGSchema:
             ],
             "auto_discovery": self.auto_discovery
         }
+
+
+def load_schema_from_json(schema_path: Union[str, Path]) -> Union[DRGSchema, EnhancedDRGSchema]:
+    """Load schema from JSON file (supports both Enhanced and legacy formats).
+    
+    Args:
+        schema_path: Path to JSON schema file
+    
+    Returns:
+        DRGSchema or EnhancedDRGSchema instance
+    
+    Raises:
+        FileNotFoundError: If schema file doesn't exist
+        ValueError: If schema JSON is invalid
+    """
+    path = Path(schema_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            schema_data = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in schema file: {e}") from e
+    
+    # Enhanced schema formatını kontrol et
+    if "entity_types" in schema_data:
+        entity_types = [
+            EntityType(
+                name=et["name"],
+                description=et.get("description", ""),
+                examples=et.get("examples", []),
+                properties=et.get("properties", {})
+            )
+            for et in schema_data.get("entity_types", [])
+        ]
+        
+        relation_groups = []
+        for rg_data in schema_data.get("relation_groups", []):
+            relations = [
+                Relation(
+                    name=r["name"],
+                    src=r.get("source", r.get("src", "")),
+                    dst=r.get("target", r.get("dst", "")),
+                    description=r.get("description", ""),
+                    detail=r.get("detail", "")
+                )
+                for r in rg_data.get("relations", [])
+            ]
+            relation_groups.append(RelationGroup(
+                name=rg_data["name"],
+                description=rg_data.get("description", ""),
+                relations=relations,
+                examples=rg_data.get("examples", [])
+            ))
+        
+        return EnhancedDRGSchema(
+            entity_types=entity_types,
+            relation_groups=relation_groups,
+            auto_discovery=schema_data.get("auto_discovery", False)
+        )
+    else:
+        # Legacy format
+        entities = [Entity(e["name"]) for e in schema_data.get("entities", [])]
+        relations = [
+            Relation(
+                name=r["name"],
+                src=r.get("source", r.get("src", "")),
+                dst=r.get("target", r.get("dst", "")),
+                description=r.get("description", ""),
+                detail=r.get("detail", "")
+            )
+            for r in schema_data.get("relations", [])
+        ]
+        
+        return DRGSchema(entities=entities, relations=relations)

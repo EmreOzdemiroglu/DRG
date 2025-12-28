@@ -75,7 +75,7 @@ Edge {
 ### 3.2 Graph Storage
 
 **Options:**
-- **Neo4j**: Production-ready graph database
+- **Neo4j**: Enterprise-grade graph database (production ortamlarında kullanıma uygun)
 - **NetworkX**: In-memory graph, Python-native
 - **ArangoDB**: Multi-model database (document + graph)
 
