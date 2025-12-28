@@ -21,39 +21,17 @@ Kullanım:
 import os
 import sys
 import json
-import ssl
 from pathlib import Path
 
-# SSL sorununu çöz (sandbox ortamında /Library/Frameworks/ erişim kısıtlaması için)
-# Environment variables
-os.environ['PYTHONHTTPSVERIFY'] = '0'
-os.environ['CURL_CA_BUNDLE'] = ''
-os.environ['REQUESTS_CA_BUNDLE'] = ''
-
-# SSL context'i unverified olarak ayarla
-ssl._create_default_https_context = ssl._create_unverified_context
-
-# requests adapters SSL context yükleme işlemini bypass et
-try:
-    import requests
-    from requests import adapters
-    if hasattr(adapters, '_preloaded_ssl_context'):
-        try:
-            unverified_context = ssl.create_default_context()
-            unverified_context.check_hostname = False
-            unverified_context.verify_mode = ssl.CERT_NONE
-            adapters._preloaded_ssl_context = unverified_context
-        except:
-            adapters._preloaded_ssl_context = None
-except:
-    pass
-
-# urllib3 SSL uyarılarını kapat
-try:
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-except:
-    pass
+# Note: SSL verification is enabled by default for security.
+# If you encounter SSL certificate errors, you should:
+# 1. Update your Python installation and certificates
+# 2. Set REQUESTS_CA_BUNDLE or SSL_CERT_FILE environment variables to point to valid certificates
+# 3. For development only (NOT recommended for production): Use environment variable
+#    REQUESTS_CA_BUNDLE="" (empty) but understand the security risks
+#
+# DO NOT disable SSL verification in code as it creates security vulnerabilities
+# (man-in-the-middle attacks, API key exposure, etc.)
 
 # Proje root'u path'e ekle
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -221,22 +199,17 @@ def main():
     text_path = inputs_dir / f"{example_name}_text.txt"
     
     # API Key ayarla (sadece environment variable'dan oku)
-    gemini_key = os.getenv("GEMINI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     
-    # Model seçimi: Önce Gemini, sonra OpenRouter
+    # Model seçimi: OpenRouter (primary)
     if not os.getenv("DRG_MODEL"):
-        if gemini_key:
-            os.environ["DRG_MODEL"] = "gemini/gemini-2.0-flash-exp"
-            print("✅ GEMINI_API_KEY bulundu, Gemini model kullanılacak")
-        elif openrouter_key:
-            os.environ["OPENROUTER_API_KEY"] = openrouter_key
+        if openrouter_key:
             os.environ["DRG_MODEL"] = "openrouter/anthropic/claude-3-haiku"
             print("✅ OPENROUTER_API_KEY bulundu, OpenRouter model kullanılacak")
         else:
             os.environ["DRG_MODEL"] = "openrouter/anthropic/claude-3-haiku"
-            print("⚠️  API key bulunamadı. OpenRouter varsayılan olarak kullanılacak.")
-            print("   API key ayarlamak için: export GEMINI_API_KEY='your-key' veya export OPENROUTER_API_KEY='your-key'")
+            print("⚠️  OPENROUTER_API_KEY bulunamadı. OpenRouter varsayılan olarak kullanılacak.")
+            print("   API key ayarlamak için: export OPENROUTER_API_KEY='your-key'")
     
     # Metni dosyadan yükle
     if not text_path.exists():
@@ -286,8 +259,8 @@ def main():
             print(f"⚠️  DRG_FORCE_SCHEMA_GEN=1: Mevcut schema dosyası yok sayılıyor, metinden yeniden oluşturuluyor...")
         else:
             print(f"⚠️  Schema dosyası bulunamadı: {schema_path}")
-        print(f"   Metinden otomatik schema oluşturuluyor...")
-        print(f"   💡 Her zaman otomatik schema generation için: export DRG_FORCE_SCHEMA_GEN=1")
+            print(f"   Metinden otomatik schema oluşturuluyor...")
+            print(f"   💡 Her zaman otomatik schema generation için: export DRG_FORCE_SCHEMA_GEN=1")
         
         # LLM'i yapılandır (schema generation öncesi)
         from drg.extract import _configure_llm_auto, generate_schema_from_text
@@ -510,7 +483,7 @@ def main():
         # OpenRouter üzerinden embedding (eğer destekleniyorsa)
         embedding_provider = create_embedding_provider(
             provider="openrouter",
-            model="text-embedding-3-small",  # OpenAI embedding via OpenRouter
+            model="openai/text-embedding-3-small",  # OpenAI embedding via OpenRouter
         )
         print("   OpenRouter embedding provider kullanılıyor")
     except Exception as e:

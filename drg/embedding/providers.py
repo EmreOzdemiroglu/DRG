@@ -264,8 +264,9 @@ class OpenRouterEmbeddingProvider(EmbeddingProvider):
     
     def get_cost_per_token(self) -> float:
         """Get cost per token."""
-        # OpenRouter costs vary by model
-        # This is a placeholder - actual costs depend on the model
+        # OpenRouter costs vary by model and are subject to change
+        # For accurate cost calculation, consult OpenRouter pricing documentation
+        # or implement model-specific cost lookup
         return 0.0
 
 

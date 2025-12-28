@@ -7,13 +7,101 @@ requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [{name = "Your Name"}]
 dependencies = [
-    "dspy>=2.4.0",
-    # Optional: Graph Persistence (Neo4j)
+    # Core dependencies (always required)
+    "dspy>=2.4.0,<4.0.0",  # DSPy: Pin to stable version range (latest: 3.0.4 as of Nov 2025)
+    # Note: TypedPredictor available in DSPy 2.5+, optimizers available in 2.4+
+    "pydantic>=2.0.0",  # Data validation (used by DSPy TypedPredictor and schema models)
+]
+
+[project.optional-dependencies]
+# Optional dependencies organized by feature
+
+# Graph persistence with Neo4j
+neo4j = [
     "neo4j>=5.0.0",
-    # Optional: API Server
+]
+
+# API server with FastAPI
+api = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
-    "pydantic>=2.0.0",
+]
+
+# Embedding providers
+openai = [
+    "openai>=1.0.0",
+]
+gemini = [
+    "google-generativeai>=0.3.0",
+]
+openrouter = [
+    # OpenRouter uses openai library
+    "openai>=1.0.0",
+]
+local = [
+    "sentence-transformers>=2.2.0",
+]
+
+# Vector stores
+chroma = [
+    "chromadb>=0.4.0",
+]
+qdrant = [
+    "qdrant-client>=1.0.0",
+]
+pinecone = [
+    "pinecone-client>=2.0.0",
+]
+faiss = [
+    "faiss-cpu>=1.7.0",
+    # or faiss-gpu for GPU support
+]
+
+# Clustering algorithms
+louvain = [
+    "python-louvain>=0.16",
+]
+leiden = [
+    "leidenalg>=0.9.0",
+]
+spectral = [
+    "scikit-learn>=1.3.0",
+]
+
+# Graph processing
+networkx = [
+    "networkx>=3.0",
+]
+
+# Coreference resolution (NLP)
+coreference = [
+    "spacy>=3.7.0",
+    # Note: NeuralCoref is deprecated, using spaCy with basic heuristics
+    # For advanced coreference, consider AllenNLP or HuggingFace transformers
+]
+
+# All optional dependencies (for convenience)
+all = [
+    "neo4j>=5.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "openai>=1.0.0",
+    "google-generativeai>=0.3.0",
+    "sentence-transformers>=2.2.0",
+    "chromadb>=0.4.0",
+    "qdrant-client>=1.0.0",
+    "pinecone-client>=2.0.0",
+    "faiss-cpu>=1.7.0",
+    "networkx>=3.0",
+    "python-louvain>=0.16",
+    "leidenalg>=0.9.0",
+    "scikit-learn>=1.3.0",
+    "spacy>=3.7.0",
+]
+
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
 ]
 
 [project.scripts]
@@ -21,3 +109,6 @@ drg = "drg.cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "integration: marks tests as integration tests (require API keys, slow)",
+]

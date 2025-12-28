@@ -1,10 +1,15 @@
 """
-DRG Test Suite - Tüm provider'lar için entity ve relation extraction testleri.
+DRG Test Suite - Unit tests using mocks (no API keys required).
+
+These tests use mocks to test the logic without external dependencies.
+Integration tests that require API keys should be in a separate file.
 """
-import os
 import pytest
+from unittest.mock import Mock, patch, MagicMock
+from typing import List, Tuple
+
 from drg.schema import Entity, Relation, DRGSchema
-from drg.extract import extract_triples
+from drg.extract import extract_triples, extract_typed
 from drg.graph.kg_core import EnhancedKG, KGNode, KGEdge
 
 
@@ -29,213 +34,118 @@ def _get_test_text() -> str:
     return "Apple Inc. was founded by Steve Jobs in 1976. Tim Cook is the current CEO of Apple. Apple produces the iPhone, iPad, and Mac computers."
 
 
-def _check_api_key_and_set_model(provider: str) -> str:
-    """
-    Provider'a göre API key kontrolü yap ve model ayarla.
+class TestExtractTriplesWithMock:
+    """Mock-based unit tests for extract_triples function."""
     
-    Args:
-        provider: "openai", "gemini", "openrouter", "anthropic"
-    
-    Returns:
-        Model adı
-    
-    Raises:
-        pytest.skip: API key yoksa test'i atla
-    """
-    model_map = {
-        "openai": "openai/gpt-4o-mini",
-        "gemini": "gemini/gemini-2.0-flash-exp",
-        "openrouter": "openrouter/anthropic/claude-3-haiku",
-        "anthropic": "anthropic/claude-3-haiku"
-    }
-    
-    api_key_map = {
-        "openai": "OPENAI_API_KEY",
-        "gemini": "GEMINI_API_KEY",
-        "openrouter": "OPENROUTER_API_KEY",
-        "anthropic": "ANTHROPIC_API_KEY"
-    }
-    
-    model = model_map.get(provider)
-    api_key_env = api_key_map.get(provider)
-    
-    if not model or not api_key_env:
-        pytest.skip(f"Unknown provider: {provider}")
-    
-    api_key = os.getenv(api_key_env)
-    if not api_key:
-        pytest.skip(
-            f"No {api_key_env} found. "
-            f"Set {api_key_env} environment variable to run this test."
-        )
-    
-    # Model'i environment variable'a set et
-    os.environ["DRG_MODEL"] = model
-    
-    return model
-
-
-def test_extract_entities_and_relations_with_openai():
-    """OpenAI model ile entity ve relation extraction testi."""
-    model = _check_api_key_and_set_model("openai")
-    
-    schema = _get_test_schema()
-    text = _get_test_text()
-    
-    triples = extract_triples(text, schema)
-    triples = list(dict.fromkeys(triples))  # Duplicate'leri kaldır
-    
-    # EnhancedKG oluştur
-    enhanced_kg = EnhancedKG()
-    
-    # Entities ekle
-    entity_map = {}
-    for source, relation, target in triples:
-        if source not in entity_map:
-            entity_map[source] = KGNode(id=source, type=None)
-            enhanced_kg.add_node(entity_map[source])
-        if target not in entity_map:
-            entity_map[target] = KGNode(id=target, type=None)
-            enhanced_kg.add_node(entity_map[target])
-    
-    # Edges ekle
-    for source, relation, target in triples:
-        edge = KGEdge(
-            source=source,
-            target=target,
-            relationship_type=relation,
-            relationship_detail=f"{source} {relation} {target}",
-            metadata={}
-        )
-        enhanced_kg.add_edge(edge)
-    
-    # Assertions
-    assert len(enhanced_kg.nodes) > 0, "En az bir node olmalı"
-    assert len(enhanced_kg.edges) > 0, "En az bir edge olmalı"
-    
-    # Apple entity'si olmalı
-    assert "Apple" in enhanced_kg.nodes, "Apple entity'si bulunmalı"
-    
-    # iPhone veya iPad gibi bir product olmalı
-    product_found = any(
-        "iPhone" in node_id or "iPad" in node_id or "Mac" in node_id
-        for node_id in enhanced_kg.nodes.keys()
-    )
-    assert product_found, "En az bir product entity'si bulunmalı"
-
-
-def test_extract_entities_and_relations_with_gemini():
-    """Gemini model ile entity ve relation extraction testi."""
-    model = _check_api_key_and_set_model("gemini")
-    
-    schema = _get_test_schema()
-    text = _get_test_text()
-    
-    triples = extract_triples(text, schema)
-    triples = list(dict.fromkeys(triples))
-    
-    # EnhancedKG oluştur
-    enhanced_kg = EnhancedKG()
-    
-    # Entities ve edges ekle
-    entity_map = {}
-    for source, relation, target in triples:
-        if source not in entity_map:
-            entity_map[source] = KGNode(id=source, type=None)
-            enhanced_kg.add_node(entity_map[source])
-        if target not in entity_map:
-            entity_map[target] = KGNode(id=target, type=None)
-            enhanced_kg.add_node(entity_map[target])
+    @patch('drg.extract.extract_typed')
+    def test_extract_triples_basic(self, mock_extract_typed):
+        """Test extract_triples with mocked extract_typed."""
+        # Mock extract_typed to return predefined entities and relations
+        mock_entities = [
+            ("Apple", "Company"),
+            ("Steve Jobs", "Person"),
+            ("Tim Cook", "Person"),
+            ("iPhone", "Product"),
+            ("iPad", "Product"),
+            ("Mac computers", "Product"),
+        ]
+        mock_relations = [
+            ("Apple", "founded_by", "Steve Jobs"),
+            ("Tim Cook", "ceo_of", "Apple"),
+            ("Apple", "produces", "iPhone"),
+            ("Apple", "produces", "iPad"),
+            ("Apple", "produces", "Mac computers"),
+        ]
+        mock_extract_typed.return_value = (mock_entities, mock_relations)
         
-        edge = KGEdge(
-            source=source,
-            target=target,
-            relationship_type=relation,
-            relationship_detail=f"{source} {relation} {target}",
-            metadata={}
-        )
-        enhanced_kg.add_edge(edge)
-    
-    # Assertions
-    assert len(enhanced_kg.nodes) > 0
-    assert len(enhanced_kg.edges) > 0
-    assert "Apple" in enhanced_kg.nodes
-
-
-def test_extract_entities_and_relations_with_openrouter():
-    """OpenRouter model ile entity ve relation extraction testi."""
-    model = _check_api_key_and_set_model("openrouter")
-    
-    schema = _get_test_schema()
-    text = _get_test_text()
-    
-    triples = extract_triples(text, schema)
-    triples = list(dict.fromkeys(triples))
-    
-    # EnhancedKG oluştur
-    enhanced_kg = EnhancedKG()
-    
-    # Entities ve edges ekle
-    entity_map = {}
-    for source, relation, target in triples:
-        if source not in entity_map:
-            entity_map[source] = KGNode(id=source, type=None)
-            enhanced_kg.add_node(entity_map[source])
-        if target not in entity_map:
-            entity_map[target] = KGNode(id=target, type=None)
-            enhanced_kg.add_node(entity_map[target])
+        schema = _get_test_schema()
+        text = _get_test_text()
         
-        edge = KGEdge(
-            source=source,
-            target=target,
-            relationship_type=relation,
-            relationship_detail=f"{source} {relation} {target}",
-            metadata={}
-        )
-        enhanced_kg.add_edge(edge)
-    
-    # Assertions
-    assert len(enhanced_kg.nodes) > 0
-    assert len(enhanced_kg.edges) > 0
-    assert "Apple" in enhanced_kg.nodes
-
-
-def test_extract_entities_and_relations_with_anthropic():
-    """Anthropic (Claude) model ile entity ve relation extraction testi."""
-    model = _check_api_key_and_set_model("anthropic")
-    
-    schema = _get_test_schema()
-    text = _get_test_text()
-    
-    triples = extract_triples(text, schema)
-    triples = list(dict.fromkeys(triples))
-    
-    # EnhancedKG oluştur
-    enhanced_kg = EnhancedKG()
-    
-    # Entities ve edges ekle
-    entity_map = {}
-    for source, relation, target in triples:
-        if source not in entity_map:
-            entity_map[source] = KGNode(id=source, type=None)
-            enhanced_kg.add_node(entity_map[source])
-        if target not in entity_map:
-            entity_map[target] = KGNode(id=target, type=None)
-            enhanced_kg.add_node(entity_map[target])
+        # Call extract_triples
+        triples = extract_triples(text, schema)
+        triples = list(dict.fromkeys(triples))  # Duplicate'leri kaldır
         
-        edge = KGEdge(
-            source=source,
-            target=target,
-            relationship_type=relation,
-            relationship_detail=f"{source} {relation} {target}",
-            metadata={}
-        )
-        enhanced_kg.add_edge(edge)
+        # Verify extract_typed was called
+        mock_extract_typed.assert_called_once()
+        call_args = mock_extract_typed.call_args
+        assert call_args[0][0] == text  # First positional arg is text
+        assert call_args[0][1] == schema  # Second positional arg is schema
+        
+        # Verify triples structure
+        assert len(triples) > 0, "En az bir triple olmalı"
+        assert all(len(triple) == 3 for triple in triples), "Her triple (source, relation, target) formatında olmalı"
+        
+        # Verify specific triples
+        triple_set = set(triples)
+        assert ("Apple", "founded_by", "Steve Jobs") in triple_set
+        assert ("Apple", "produces", "iPhone") in triple_set
     
-    # Assertions
-    assert len(enhanced_kg.nodes) > 0
-    assert len(enhanced_kg.edges) > 0
-    assert "Apple" in enhanced_kg.nodes
+    @patch('drg.extract.extract_typed')
+    def test_extract_triples_empty_result(self, mock_extract_typed):
+        """Test extract_triples with empty extraction result."""
+        # Mock extract_typed to return empty results
+        mock_extract_typed.return_value = ([], [])
+        
+        schema = _get_test_schema()
+        text = "Some text with no entities"
+        
+        triples = extract_triples(text, schema)
+        
+        # Should return empty list
+        assert triples == []
+        mock_extract_typed.assert_called_once()
+
+
+class TestKGConstructionFromTriples:
+    """Test KG construction from extracted triples (logic tests, no API calls)."""
+    
+    def test_enhanced_kg_from_triples(self):
+        """Test EnhancedKG construction from triples without API calls."""
+        # Simulated extraction results (as if from extract_triples)
+        triples = [
+            ("Apple", "founded_by", "Steve Jobs"),
+            ("Tim Cook", "ceo_of", "Apple"),
+            ("Apple", "produces", "iPhone"),
+            ("Apple", "produces", "iPad"),
+        ]
+        
+        # EnhancedKG oluştur
+        enhanced_kg = EnhancedKG()
+        
+        # Entities ekle
+        entity_map = {}
+        for source, relation, target in triples:
+            if source not in entity_map:
+                entity_map[source] = KGNode(id=source, type=None)
+                enhanced_kg.add_node(entity_map[source])
+            if target not in entity_map:
+                entity_map[target] = KGNode(id=target, type=None)
+                enhanced_kg.add_node(entity_map[target])
+        
+        # Edges ekle
+        for source, relation, target in triples:
+            edge = KGEdge(
+                source=source,
+                target=target,
+                relationship_type=relation,
+                relationship_detail=f"{source} {relation} {target}",
+                metadata={}
+            )
+            enhanced_kg.add_edge(edge)
+        
+        # Assertions
+        assert len(enhanced_kg.nodes) > 0, "En az bir node olmalı"
+        assert len(enhanced_kg.edges) > 0, "En az bir edge olmalı"
+        
+        # Apple entity'si olmalı
+        assert "Apple" in enhanced_kg.nodes, "Apple entity'si bulunmalı"
+        
+        # iPhone veya iPad gibi bir product olmalı
+        product_found = any(
+            "iPhone" in node_id or "iPad" in node_id
+            for node_id in enhanced_kg.nodes.keys()
+        )
+        assert product_found, "En az bir product entity'si bulunmalı"
 
 
 def test_schema_with_relation_descriptions():

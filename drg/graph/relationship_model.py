@@ -5,12 +5,25 @@ This module provides enriched relationship modeling with:
 - Structured relationship representation (source, target, type, detail, confidence, source_ref)
 - Relationship type taxonomy
 - Rule-based classifier (type compatibility + schema constraints)
-- LLM-based classifier stub (for future implementation)
+- LLM-based classifier using DSPy TypedPredictor
 """
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Tuple, Set
 from enum import Enum
+import logging
+
+# Lazy import for optional DSPy dependency
+try:
+    import dspy
+    from pydantic import BaseModel
+    DSPY_AVAILABLE = True
+except ImportError:
+    DSPY_AVAILABLE = False
+    dspy = None
+    BaseModel = None
+
+logger = logging.getLogger(__name__)
 
 
 # Relationship Type Taxonomy
@@ -158,7 +171,8 @@ class EnrichedRelationship:
     - relationship_type: Type from RelationshipType taxonomy
     - relationship_detail: Short descriptive sentence explaining the relationship
     - confidence: Confidence score (0.0 to 1.0)
-    - source_ref: Reference to source (e.g., chunk_id, document_id) - placeholder for now
+    - source_ref: Reference to source (e.g., chunk_id, document_id)
+                  Note: Currently not populated, reserved for future provenance tracking
     """
     source: str
     target: str
@@ -221,15 +235,18 @@ class RelationshipTypeClassifier:
     Combines rule-based and LLM-based approaches.
     """
     
-    def __init__(self, schema: Optional[Any] = None):
+    def __init__(self, schema: Optional[Any] = None, use_llm: bool = True):
         """
         Initialize classifier.
         
         Args:
             schema: Optional schema object (EnhancedDRGSchema or DRGSchema)
                    for constraint checking
+            use_llm: Whether to use LLM-based classification (default: True)
         """
         self.schema = schema
+        self.use_llm = use_llm and DSPY_AVAILABLE
+        self._llm_classifier = None  # Lazy initialization
         self._build_schema_indexes()
     
     def _build_schema_indexes(self):
@@ -301,15 +318,17 @@ class RelationshipTypeClassifier:
         if rule_based_results and rule_based_results[0][1] >= 0.8:
             return rule_based_results[:3]  # Top 3
         
-        # Otherwise, try LLM-based (stub for now)
-        llm_results = self._classify_llm_based(
-            source=source,
-            target=target,
-            source_type=source_type,
-            target_type=target_type,
-            raw_relation_text=raw_relation_text,
-            context=context,
-        )
+        # Otherwise, try LLM-based classification
+        llm_results = []
+        if self.use_llm:
+            llm_results = self._classify_llm_based(
+                source=source,
+                target=target,
+                source_type=source_type,
+                target_type=target_type,
+                raw_relation_text=raw_relation_text,
+                context=context,
+            )
         
         # Combine and sort by confidence
         all_results = rule_based_results + llm_results
@@ -453,21 +472,74 @@ class RelationshipTypeClassifier:
         context: Optional[str] = None,
     ) -> List[Tuple[RelationshipType, float]]:
         """
-        LLM-based classification (STUB - to be implemented later).
+        LLM-based classification using DSPy TypedPredictor.
         
-        This is a placeholder that returns empty results.
-        Future implementation will use LLM to classify relationship types
-        based on context and entity information.
+        Uses an LLM to classify relationship types based on context and entity information.
         
         Returns:
-            Empty list (stub implementation)
+            List of (RelationshipType, confidence) tuples
         """
-        # TODO: Implement LLM-based classification
-        # This would use DSPy or similar to:
-        # 1. Create a prompt with source, target, context
-        # 2. Ask LLM to classify relationship type
-        # 3. Extract relationship detail explanation
-        # 4. Return classified type with confidence
+        if not DSPY_AVAILABLE:
+            logger.warning("DSPy not available, skipping LLM-based classification")
+            return []
+        
+        try:
+            # Create relationship classification signature and predictor (lazy initialization)
+            if self._llm_classifier is None:
+                self._llm_classifier = _create_relationship_classifier()
+            
+            if self._llm_classifier is None:
+                logger.warning("Failed to create LLM classifier, skipping LLM-based classification")
+                return []
+            
+            # Build classification input
+            classification_input = _build_classification_input(
+                source=source,
+                target=target,
+                source_type=source_type,
+                target_type=target_type,
+                raw_relation_text=raw_relation_text,
+                context=context,
+            )
+            
+            # Get LLM classification
+            result = self._llm_classifier(**classification_input)
+            
+            # Parse results
+            if isinstance(result, RelationshipClassification):
+                classifications = result.classifications
+            else:
+                # Fallback: try to get classifications attribute
+                classifications = getattr(result, 'classifications', [])
+                if not isinstance(classifications, list):
+                    logger.warning(f"Expected RelationshipClassification, got {type(result).__name__}")
+                    return []
+            
+            # Convert to RelationshipType enum and confidence tuples
+            results = []
+            for item in classifications:
+                if isinstance(item, dict):
+                    rel_type_str = item.get('relationship_type', '')
+                    confidence = item.get('confidence', 0.5)
+                elif hasattr(item, 'relationship_type') and hasattr(item, 'confidence'):
+                    rel_type_str = item.relationship_type
+                    confidence = item.confidence
+                else:
+                    continue
+                
+                # Try to map string to RelationshipType enum
+                try:
+                    rel_type = RelationshipType(rel_type_str.lower())
+                    results.append((rel_type, float(confidence)))
+                except (ValueError, AttributeError):
+                    # Skip invalid relationship types
+                    logger.debug(f"Invalid relationship type: {rel_type_str}")
+                    continue
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"LLM-based classification failed: {e}, returning empty results")
         return []
 
 
@@ -501,6 +573,110 @@ def create_enriched_relationship(
         confidence=confidence,
         source_ref=source_ref,
     )
+
+
+# LLM-based Classification Support (DSPy integration)
+if DSPY_AVAILABLE:
+    class RelationshipClassificationItem(BaseModel):
+        """Single relationship classification result."""
+        relationship_type: str  # Relationship type from the taxonomy (e.g., 'causes', 'located_at')
+        confidence: float  # Confidence score between 0.0 and 1.0
+    
+    class RelationshipClassification(BaseModel):
+        """Structured output model for relationship classification."""
+        classifications: List[RelationshipClassificationItem]  # List of possible relationship types with confidence scores, sorted by confidence
+    
+    def _create_relationship_classifier():
+        """Create DSPy TypedPredictor for relationship classification.
+        
+        Returns:
+            TypedPredictor instance configured for relationship classification
+        """
+        # Build relationship type list for the prompt
+        rel_types = [rt.value for rt in RelationshipType]
+        rel_types_str = ", ".join(sorted(rel_types))
+        
+        # Build categories info for better context
+        categories_info = []
+        for category, types in RELATIONSHIP_CATEGORIES.items():
+            types_str = ", ".join([rt.value for rt in types])
+            categories_info.append(f"{category}: {types_str}")
+        categories_str = "\n".join(categories_info)
+        
+        class RelationshipClassificationSignature(dspy.Signature):
+            """Classify the relationship type between two entities.
+            
+            Given the source entity, target entity, their types, and context,
+            classify the most appropriate relationship type(s) from the taxonomy.
+            
+            Available relationship types: {rel_types_str}
+            
+            Categories:
+            {categories_str}
+            
+            Return the top 3 most likely relationship types with confidence scores.
+            """
+            source: str = dspy.InputField(desc="Source entity name")
+            target: str = dspy.InputField(desc="Target entity name")
+            source_type: Optional[str] = dspy.InputField(desc="Source entity type (e.g., 'Person', 'Location')", default=None)
+            target_type: Optional[str] = dspy.InputField(desc="Target entity type (e.g., 'Person', 'Location')", default=None)
+            raw_relation_text: Optional[str] = dspy.InputField(desc="Raw text describing the relationship", default=None)
+            context: Optional[str] = dspy.InputField(desc="Contextual text where the relationship appears", default=None)
+            # Output handled by TypedPredictor with RelationshipClassification model
+        
+        # Store metadata in signature class
+        RelationshipClassificationSignature._rel_types = rel_types_str
+        RelationshipClassificationSignature._categories = categories_str
+        
+        # Create TypedPredictor
+        try:
+            if hasattr(dspy, 'TypedPredictor'):
+                return dspy.TypedPredictor(RelationshipClassificationSignature, output_type=RelationshipClassification)
+            else:
+                logger.warning("TypedPredictor not available, using Predict as fallback")
+                return dspy.Predict(RelationshipClassificationSignature)
+        except Exception as e:
+            logger.warning(f"Failed to create TypedPredictor: {e}, using Predict")
+            return dspy.Predict(RelationshipClassificationSignature)
+    
+    def _build_classification_input(
+        source: str,
+        target: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
+        raw_relation_text: Optional[str] = None,
+        context: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Build input dictionary for relationship classification.
+        
+        Args:
+            source: Source entity name
+            target: Target entity name
+            source_type: Optional source entity type
+            target_type: Optional target entity type
+            raw_relation_text: Optional raw relation text
+            context: Optional context text
+        
+        Returns:
+            Dictionary with classification inputs
+        """
+        return {
+            "source": source,
+            "target": target,
+            "source_type": source_type,
+            "target_type": target_type,
+            "raw_relation_text": raw_relation_text,
+            "context": context,
+        }
+else:
+    # Stub functions when DSPy is not available
+    def _create_relationship_classifier():
+        """Stub function when DSPy is not available."""
+        return None
+    
+    def _build_classification_input(*args, **kwargs):
+        """Stub function when DSPy is not available."""
+        return {}
 
 
 

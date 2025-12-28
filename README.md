@@ -2,6 +2,8 @@
 
 DRG, metinlerden bilgi grafiği (knowledge graph) çıkarımı yapmak için declarative bir Python kütüphanesidir. DSPy framework'ünü kullanarak, sadece şema tanımlayarak otomatik olarak entity ve relation extraction yapabilirsiniz.
 
+> **⚠️ Note:** This is an alpha version (0.1.0a0). The project is actively under development and may have breaking changes. Use with caution in production environments.
+
 ## 🚀 Özellikler
 
 - **Declarative Schema**: Sadece entity tipleri ve ilişkileri tanımlayın, gerisini DRG halletsin
@@ -256,15 +258,29 @@ Model seçimi `DRG_MODEL` environment variable'ı ile yapılır.
 ## 🛠️ Geliştirme
 
 ```bash
-# Geliştirme ortamını kur
-pip install -e ".[dev]"
+# Geliştirme ortamını kur (tüm optional dependencies ile)
+pip install -e ".[dev,all]"
 
 # Testleri çalıştır
 pytest
 
-# Linting
-# (projeye göre eklenebilir)
+# Linting ve type checking
+# (projeye göre eklenebilir: ruff, mypy, black)
 ```
+
+### Optional Dependencies
+
+DRG, modüler bir bağımlılık yapısı kullanır:
+
+- **Core**: `dspy`, `pydantic` (her zaman gerekli)
+- **Graph Persistence**: `neo4j` (Neo4j export için)
+- **API Server**: `fastapi`, `uvicorn` (REST API için)
+- **Embedding Providers**: `openai`, `google-generativeai`, `sentence-transformers`
+- **Vector Stores**: `chromadb`, `qdrant-client`, `pinecone-client`, `faiss-cpu`
+- **Clustering**: `python-louvain`, `leidenalg`, `scikit-learn`
+- **Graph Processing**: `networkx`
+
+Sadece kullandığınız özellikler için ilgili dependencies'i yükleyin.
 
 ## 📝 Lisans
 

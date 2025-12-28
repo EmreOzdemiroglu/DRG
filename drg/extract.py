@@ -3,11 +3,11 @@
 Declarative knowledge graph extraction using DSPy.
 Schema'dan dinamik olarak DSPy signature'ları oluşturur - tamamen declarative.
 """
-from typing import List, Tuple, Optional, Union
-import time
+from typing import List, Tuple, Optional, Union, Any, Dict
 import logging
 import json
 import dspy
+from pydantic import BaseModel
 
 from .schema import (
     DRGSchema, 
@@ -21,6 +21,82 @@ from .schema import (
 logger = logging.getLogger(__name__)
 
 
+# Pydantic models for structured output (DSPy TypedPredictor compatibility)
+class EntityList(BaseModel):
+    """Structured output model for entity extraction."""
+    entities: List[Tuple[str, str]]  # List of (entity_name, entity_type) tuples
+
+
+class RelationList(BaseModel):
+    """Structured output model for relation extraction."""
+    relations: List[Tuple[str, str, str]]  # List of (source, relation, target) tuples
+
+
+def _parse_json_output(json_str: str, expected_format: str = "array") -> list:
+    """Parse JSON string from DSPy output.
+    
+    NOTE: This function is DEPRECATED and used only in fallback mode when TypedPredictor 
+    is not available. In normal operation, TypedPredictor handles JSON parsing automatically
+    without requiring manual string manipulation.
+    
+    For new code, use TypedPredictor with Pydantic models instead of this function.
+    This function exists only for backward compatibility with older DSPy versions.
+    
+    Args:
+        json_str: JSON string to parse (may include markdown code blocks in legacy mode)
+        expected_format: Expected JSON format ("array" or "object")
+    
+    Returns:
+        Parsed JSON data (list or dict, depending on expected_format)
+    
+    Raises:
+        ValueError: If JSON parsing fails (instead of silently returning empty result)
+    """
+    if not isinstance(json_str, str):
+        error_msg = f"Expected string, got {type(json_str).__name__}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    # NOTE: Manual markdown code block cleaning is a workaround for legacy DSPy usage
+    # with dspy.Predict (not TypedPredictor). TypedPredictor handles this automatically.
+    # This is kept only for backward compatibility.
+    # Try parsing directly first (most LLMs output clean JSON when using TypedPredictor-style prompts)
+    json_str = json_str.strip()
+    
+    try:
+        parsed = json.loads(json_str)
+    except json.JSONDecodeError:
+        # If direct parsing fails, try cleaning markdown code blocks (legacy LLM behavior)
+        # This is a known issue with some LLMs wrapping JSON in markdown code blocks
+        # when not using TypedPredictor's structured output handling
+        cleaned = json_str
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+        try:
+            parsed = json.loads(cleaned)
+            logger.debug("JSON parsing succeeded after markdown code block removal (legacy behavior)")
+        except json.JSONDecodeError as e:
+            error_msg = f"Failed to parse JSON output even after markdown cleaning: {str(e)}. Input: {json_str[:200]}"
+            logger.error(error_msg)
+            raise ValueError(error_msg) from e
+    
+    # Validate format - raise error if format doesn't match expected (don't silently return empty)
+    if expected_format == "array" and not isinstance(parsed, list):
+        error_msg = f"Expected JSON array, got {type(parsed).__name__}. Input: {json_str[:200]}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    elif expected_format == "object" and not isinstance(parsed, dict):
+        error_msg = f"Expected JSON object, got {type(parsed).__name__}. Input: {json_str[:200]}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    return parsed
+
+
 def _normalize_schema(schema: Union[DRGSchema, EnhancedDRGSchema]) -> DRGSchema:
     """Convert EnhancedDRGSchema to DRGSchema for internal use."""
     if isinstance(schema, EnhancedDRGSchema):
@@ -29,11 +105,16 @@ def _normalize_schema(schema: Union[DRGSchema, EnhancedDRGSchema]) -> DRGSchema:
 
 
 def _create_entity_signature(schema: Union[DRGSchema, EnhancedDRGSchema]) -> type:
-    """Schema'dan dinamik olarak EntityExtraction signature'ı oluştur."""
+    """Schema'dan dinamik olarak EntityExtraction signature'ı oluştur.
+    
+    DSPy best practice: Minimal signature with clear field descriptions.
+    Structured output will be handled by TypedPredictor with Pydantic model.
+    """
     normalized = _normalize_schema(schema)
     
     # Enhanced schema için daha zengin açıklama
     if isinstance(schema, EnhancedDRGSchema):
+        entity_types = ", ".join([et.name for et in schema.entity_types])
         entity_descriptions = []
         for et in schema.entity_types:
             desc = f"{et.name}: {et.description}"
@@ -41,30 +122,48 @@ def _create_entity_signature(schema: Union[DRGSchema, EnhancedDRGSchema]) -> typ
                 desc += f" (examples: {', '.join(et.examples[:3])})"
             entity_descriptions.append(desc)
         entity_info = "\n".join(entity_descriptions)
-        entity_types = ", ".join([et.name for et in schema.entity_types])
     else:
         entity_types = ", ".join([e.name for e in normalized.entities])
         entity_info = entity_types
     
     class EntityExtraction(dspy.Signature):
-        """Extract entities from text according to the schema."""
+        """Extract entities from text according to the schema.
+        
+        Extract all entities of the specified types from the input text.
+        Entity types: {entity_types}
+        """
         text: str = dspy.InputField(desc="Input text to extract entities from")
-        entities: str = dspy.OutputField(
-            desc=f"JSON array of entities, each as [entity_name, entity_type]. Entity types: {entity_info}. Return only valid JSON array."
-        )
+        # Output will be handled by TypedPredictor with EntityList Pydantic model
+        # No OutputField here - TypedPredictor handles structured output
+    
+    # Replace docstring with formatted version (DSPy uses __doc__ attribute for prompt generation)
+    # This ensures actual entity types are included in the prompt, not placeholders
+    EntityExtraction.__doc__ = f"""Extract entities from text according to the schema.
+
+Extract all entities of the specified types from the input text.
+Entity types: {entity_types}
+"""
+    
+    # Store entity info in class for later use (optional, for debugging/validation)
+    EntityExtraction._entity_info = entity_info
+    EntityExtraction._entity_types = entity_types
     
     return EntityExtraction
 
 
 def _create_relation_signature(schema: Union[DRGSchema, EnhancedDRGSchema]) -> type:
-    """Schema'dan dinamik olarak RelationExtraction signature'ı oluştur."""
+    """Schema'dan dinamik olarak RelationExtraction signature'ı oluştur.
+    
+    DSPy best practice: Minimal signature with clear field descriptions.
+    Structured output will be handled by TypedPredictor with Pydantic model.
+    """
     normalized = _normalize_schema(schema)
     
     # Enhanced schema için daha zengin açıklama
     if isinstance(schema, EnhancedDRGSchema):
         relation_info = []
         for rg in schema.relation_groups:
-            group_desc = f"\n{rg.name}: {rg.description}"
+            group_desc = f"{rg.name}: {rg.description}"
             for r in rg.relations:
                 group_desc += f"\n  - {r.name}: {r.src} -> {r.dst}"
             relation_info.append(group_desc)
@@ -80,12 +179,29 @@ def _create_relation_signature(schema: Union[DRGSchema, EnhancedDRGSchema]) -> t
         schema_info = "\n".join(relation_info)
     
     class RelationExtraction(dspy.Signature):
-        """Extract relationships from text according to the schema."""
+        """Extract relationships from text according to the schema.
+        
+        Extract all relationships between the provided entities based on the schema.
+        Allowed relations: {schema_info}
+        """
         text: str = dspy.InputField(desc="Input text to extract relationships from")
-        entities: str = dspy.InputField(desc="JSON array of extracted entities as [[name, type], ...]")
-        relations: str = dspy.OutputField(
-            desc=f"JSON array of relations, each as [source, relation, target]. Allowed relations: {schema_info}. Return only valid JSON array."
+        entities: List[Tuple[str, str]] = dspy.InputField(
+            desc="List of extracted entities as [(name, type), ...] tuples"
         )
+        # Output will be handled by TypedPredictor with RelationList Pydantic model
+        # No OutputField here - TypedPredictor handles structured output
+    
+    # Replace docstring with formatted version (DSPy uses __doc__ attribute for prompt generation)
+    # This ensures actual relation info is included in the prompt, not placeholders
+    RelationExtraction.__doc__ = f"""Extract relationships from text according to the schema.
+
+Extract all relationships between the provided entities based on the schema.
+Allowed relations:
+{schema_info}
+"""
+    
+    # Store relation info in class for later use (optional, for debugging/validation)
+    RelationExtraction._relation_info = schema_info
     
     return RelationExtraction
 
@@ -104,136 +220,192 @@ class KGExtractor(dspy.Module):
         EntitySig = _create_entity_signature(schema)
         RelationSig = _create_relation_signature(schema)
         
-        # DSPy predictor'ları oluştur
-        self.entity_extractor = dspy.ChainOfThought(EntitySig)
-        self.relation_extractor = dspy.ChainOfThought(RelationSig)
+        # DSPy TypedPredictor kullan (structured output için Pydantic modelleri ile)
+        # ChainOfThought yerine TypedPredictor kullan - entity extraction için "thinking" gereksiz
+        try:
+            # Try TypedPredictor first (DSPy 2.5+)
+            if hasattr(dspy, 'TypedPredictor'):
+                self.entity_extractor = dspy.TypedPredictor(EntitySig, output_type=EntityList)
+                self.relation_extractor = dspy.TypedPredictor(RelationSig, output_type=RelationList)
+                self._use_typed_predictor = True
+            else:
+                # Fallback to Predict if TypedPredictor not available
+                logger.warning("TypedPredictor not available, falling back to Predict")
+                self.entity_extractor = dspy.Predict(EntitySig)
+                self.relation_extractor = dspy.Predict(RelationSig)
+                self._use_typed_predictor = False
+        except Exception as e:
+            # Final fallback to Predict
+            logger.warning(f"TypedPredictor initialization failed: {e}, using Predict")
+            self.entity_extractor = dspy.Predict(EntitySig)
+            self.relation_extractor = dspy.Predict(RelationSig)
+            self._use_typed_predictor = False
         
-    def forward(self, text: str, max_retries: int = 3, retry_delay: float = 2.0):
-        """Extract entities and relations - tamamen DSPy ile, manuel parsing yok.
+    def forward(self, text: str) -> dspy.Prediction:
+        """Extract entities and relations using DSPy TypedPredictor.
         
         Args:
             text: Input text to extract from
-            max_retries: Maximum number of retries on rate limit errors
-            retry_delay: Delay between retries in seconds (exponential backoff)
         
         Returns:
-            dspy.Prediction with entities and relations
+            dspy.Prediction with entities and relations as lists of tuples
+        
+        Note:
+            - Retry logic is handled by DSPy LM class configuration (max_retries, backoff_factor)
+            - dspy.Assert is used for entity type validation (hard constraint - retry if invalid)
+            - dspy.Suggest is used for relation validation (soft constraint - hint to LLM)
+            - DSPy constraints ensure LLM produces schema-compliant output
         """
-        # Step 1: Extract entities with retry logic
+        # Step 1: Extract entities
         logger.info("Entity extraction başlatılıyor...")
-        entity_result = None
-        for attempt in range(max_retries):
+        
+        if self._use_typed_predictor:
+            # TypedPredictor returns Pydantic model (EntityList) directly
+            # Reference: https://github.com/stanfordnlp/dspy
+            entity_result = self.entity_extractor(text=text)
+            # entity_result is EntityList, access .entities field
+            if isinstance(entity_result, EntityList):
+                entities_list = entity_result.entities  # List[Tuple[str, str]]
+            else:
+                # Fallback: Try to get entities field (should not happen if TypedPredictor works correctly)
+                entities_list = getattr(entity_result, 'entities', [])
+                logger.warning(f"Expected EntityList, got {type(entity_result).__name__}")
+            
+            # Ensure it's a list of tuples
+            if not isinstance(entities_list, list):
+                error_msg = f"Expected list, got {type(entities_list).__name__}"
+                logger.error(f"Entity extraction: {error_msg}")
+                raise RuntimeError(f"Entity extraction returned invalid type: {error_msg}")
+        else:
+            # Fallback: Parse from string output (old method - TypedPredictor not available)
+            entity_result = self.entity_extractor(text=text)
+            entities_str = getattr(entity_result, 'entities', '[]')
             try:
-                if attempt > 0:
-                    logger.info(f"Entity extraction retry {attempt + 1}/{max_retries}...")
-                entity_result = self.entity_extractor(text=text)
-                logger.info("Entity extraction tamamlandı")
-                break
-            except Exception as e:
-                error_str = str(e).lower()
-                # Check if it's a rate limit error
-                if "rate limit" in error_str or "429" in error_str or "quota" in error_str:
-                    if attempt < max_retries - 1:
-                        wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                        logger.warning(
-                            f"Rate limit hit, retrying in {wait_time:.1f}s "
-                            f"(attempt {attempt + 1}/{max_retries})"
-                        )
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        logger.error(f"Rate limit error after {max_retries} attempts")
-                        raise
-                else:
-                    # Not a rate limit error, re-raise immediately
-                    raise
+                entities = _parse_json_output(entities_str, expected_format="array")
+                entities_list = []
+                for item in entities:
+                    if isinstance(item, (list, tuple)) and len(item) >= 2:
+                        entities_list.append((str(item[0]), str(item[1])))
+            except ValueError as e:
+                logger.error(f"Entity extraction JSON parsing failed: {e}")
+                # Re-raise instead of silently continuing with empty list
+                raise RuntimeError(f"Failed to parse entity extraction output: {e}") from e
         
-        # Parse JSON string from DSPy output
-        import json
-        entities_str = entity_result.entities if hasattr(entity_result, 'entities') else "[]"
+        # DSPy constraint validation: Use dspy.Assert for entity type validation
+        # Assert ensures all entity types are valid according to schema
+        normalized_schema = _normalize_schema(self.schema)
+        valid_entity_types = {e.name for e in normalized_schema.entities}
         
-        # Clean markdown code blocks if present
-        if isinstance(entities_str, str):
-            entities_str = entities_str.strip()
-            if entities_str.startswith("```json"):
-                entities_str = entities_str[7:]  # Remove ```json
-            elif entities_str.startswith("```"):
-                entities_str = entities_str[3:]   # Remove ```
-            if entities_str.endswith("```"):
-                entities_str = entities_str[:-3]  # Remove trailing ```
-            entities_str = entities_str.strip()
+        if entities_list:
+            # Filter empty names first (not a DSPy constraint, just data cleaning)
+            entities_list = [(name, etype) for name, etype in entities_list if name.strip()]
+            
+            # Use dspy.Assert to validate entity types (hard constraint)
+            # This ensures all entity types are valid according to schema
+            # Assert will cause LLM to retry extraction if constraint is violated
+            invalid_types = {etype for _, etype in entities_list if etype not in valid_entity_types}
+            dspy.Assert(
+                len(invalid_types) == 0,
+                f"Invalid entity types found: {invalid_types}. "
+                f"Valid types are: {sorted(valid_entity_types)}. "
+                "Please extract only entities with valid types from the schema."
+            )
         
-        try:
-            entities = json.loads(entities_str) if isinstance(entities_str, str) else entities_str
-        except (json.JSONDecodeError, TypeError):
-            logger.warning(f"Failed to parse entities JSON: {entities_str[:200]}")  # Log only first 200 chars
-            entities = []
+        logger.info(f"Entity extraction tamamlandı: {len(entities_list)} entity bulundu")
         
-        # Convert to list of tuples
-        entities_list = []
-        for item in entities:
-            if isinstance(item, (list, tuple)) and len(item) >= 2:
-                entities_list.append((str(item[0]), str(item[1])))
-        
-        # Step 2: Extract relations (entities'i input olarak ver) with retry logic
+        # Step 2: Extract relations (entities'i input olarak ver)
         logger.info(f"Relation extraction başlatılıyor ({len(entities_list)} entity ile)...")
-        relation_result = None
-        entities_json = json.dumps(entities_list)
-        for attempt in range(max_retries):
+        
+        if self._use_typed_predictor:
+            # TypedPredictor expects List[Tuple] directly, not JSON string
+            # Reference: https://github.com/stanfordnlp/dspy
+            relation_result = self.relation_extractor(
+                text=text,
+                entities=entities_list
+            )
+            # relation_result is RelationList, access .relations field
+            if isinstance(relation_result, RelationList):
+                relations_list = relation_result.relations  # List[Tuple[str, str, str]]
+            else:
+                # Fallback: Try to get relations field (should not happen if TypedPredictor works correctly)
+                relations_list = getattr(relation_result, 'relations', [])
+                logger.warning(f"Expected RelationList, got {type(relation_result).__name__}")
+            
+            # Ensure it's a list of tuples
+            if not isinstance(relations_list, list):
+                error_msg = f"Expected list, got {type(relations_list).__name__}"
+                logger.error(f"Relation extraction: {error_msg}")
+                raise RuntimeError(f"Relation extraction returned invalid type: {error_msg}")
+        else:
+            # Fallback: Convert entities to JSON string (old method - TypedPredictor not available)
+            entities_json = json.dumps(entities_list)
+            relation_result = self.relation_extractor(
+                text=text,
+                entities=entities_json
+            )
+            relations_str = getattr(relation_result, 'relations', '[]')
             try:
-                if attempt > 0:
-                    logger.info(f"Relation extraction retry {attempt + 1}/{max_retries}...")
-                relation_result = self.relation_extractor(
-                    text=text,
-                    entities=entities_json
+                relations = _parse_json_output(relations_str, expected_format="array")
+                relations_list = []
+                for item in relations:
+                    if isinstance(item, (list, tuple)) and len(item) >= 3:
+                        relations_list.append((str(item[0]), str(item[1]), str(item[2])))
+            except ValueError as e:
+                logger.error(f"Relation extraction JSON parsing failed: {e}")
+                # Re-raise instead of silently continuing with empty list
+                raise RuntimeError(f"Failed to parse relation extraction output: {e}") from e
+        
+        # DSPy constraint validation: Use dspy.Suggest for relation validation (soft constraint)
+        # Suggest provides hints to LLM about valid relations without forcing retry
+        if relations_list and entities_list:
+            # Build entity type map
+            entity_type_map = {name: etype for name, etype in entities_list}
+            entity_names = {name for name, _ in entities_list}
+            
+            # Get valid relation types from schema
+            if isinstance(self.schema, EnhancedDRGSchema):
+                valid_relations = set()
+                for rg in self.schema.relation_groups:
+                    for rel in rg.relations:
+                        valid_relations.add((rel.src, rel.name, rel.dst))
+            else:
+                valid_relations = {(r.src, r.name, r.dst) for r in normalized_schema.relations}
+            
+            # Use dspy.Assert and dspy.Suggest for relation validation
+            # Assert: All relations must reference existing entities (hard constraint)
+            missing_refs = [(s, o) for s, _, o in relations_list if s not in entity_names or o not in entity_names]
+            if missing_refs:
+                dspy.Assert(
+                    False,
+                    f"Relations reference missing entities: {missing_refs[:5]}. "
+                    "All relation entities must be extracted first."
                 )
-                logger.info("Relation extraction tamamlandı")
-                break
-            except Exception as e:
-                error_str = str(e).lower()
-                # Check if it's a rate limit error
-                if "rate limit" in error_str or "429" in error_str or "quota" in error_str:
-                    if attempt < max_retries - 1:
-                        wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                        logger.warning(
-                            f"Rate limit hit during relation extraction, retrying in {wait_time:.1f}s "
-                            f"(attempt {attempt + 1}/{max_retries})"
-                        )
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        logger.error(f"Rate limit error after {max_retries} attempts")
-                        raise
-                else:
-                    # Not a rate limit error, re-raise immediately
-                    raise
+            
+            # Suggest: Guide LLM about valid relation types (soft constraint)
+            # This provides hints without forcing retry
+            invalid_relations = []
+            for s, r, o in relations_list:
+                s_type = entity_type_map.get(s)
+                o_type = entity_type_map.get(o)
+                is_valid = s_type and o_type and (s_type, r, o_type) in valid_relations
+                if not is_valid:
+                    invalid_relations.append((s, r, o, s_type, o_type))
+            
+            if invalid_relations:
+                # Suggest: Some relations may not be valid (soft constraint - hint only)
+                invalid_examples = invalid_relations[:3]  # Show first 3 examples
+                examples_str = ", ".join([f"{r}({s}:{s_type} -> {o}:{o_type})" for s, r, o, s_type, o_type in invalid_examples])
+                dspy.Suggest(
+                    len(invalid_relations) == 0,
+                    f"Found {len(invalid_relations)} potentially invalid relations (examples: {examples_str}). "
+                    f"Consider using valid relation types from schema: {sorted(set(r for _, r, _, _, _ in invalid_relations))}"
+                )
         
-        # Parse JSON string from DSPy output
-        relations_str = relation_result.relations if hasattr(relation_result, 'relations') else "[]"
+        logger.info(f"Relation extraction tamamlandı: {len(relations_list)} relation bulundu")
         
-        # Clean markdown code blocks if present
-        if isinstance(relations_str, str):
-            relations_str = relations_str.strip()
-            if relations_str.startswith("```json"):
-                relations_str = relations_str[7:]  # Remove ```json
-            elif relations_str.startswith("```"):
-                relations_str = relations_str[3:]   # Remove ```
-            if relations_str.endswith("```"):
-                relations_str = relations_str[:-3]  # Remove trailing ```
-            relations_str = relations_str.strip()
-        
-        try:
-            relations = json.loads(relations_str) if isinstance(relations_str, str) else relations_str
-        except (json.JSONDecodeError, TypeError):
-            logger.warning(f"Failed to parse relations JSON: {relations_str[:200]}")  # Log only first 200 chars
-            relations = []
-        
-        # Convert to list of tuples
-        relations_list = []
-        for item in relations:
-            if isinstance(item, (list, tuple)) and len(item) >= 3:
-                relations_list.append((str(item[0]), str(item[1]), str(item[2])))
-        
+        # Return DSPy Prediction (standard return type for DSPy Modules)
+        # Note: Manual Prediction creation is acceptable for multi-step modules like KGExtractor
+        # that combine results from multiple predictors (entity extraction + relation extraction)
         return dspy.Prediction(
             entities=entities_list,
             relations=relations_list
@@ -242,144 +414,22 @@ class KGExtractor(dspy.Module):
 
 # Global extractor instance (lazy initialized)
 _extractor: Optional[KGExtractor] = None
-_lm_configured = False
 
 
 def _configure_llm_auto():
-    """DSPy LLM'ini otomatik olarak environment variable'lardan konfigüre et."""
-    global _lm_configured
+    """DSPy LLM'ini otomatik olarak environment variable'lardan konfigüre et.
     
-    if _lm_configured:
+    This function now uses the LMConfig class from drg.config module
+    for better testability and separation of concerns.
+    """
+    # Try importing configure_lm (lazy import pattern)
+    try:
+        from .config import configure_lm
+        configure_lm()
         return
-    
-    import os
-    import warnings
-    
-    # Environment variable'lardan otomatik oku
-    model = os.getenv("DRG_MODEL", "openai/gpt-4o-mini")
-    
-    # API key'leri environment'tan oku
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-    perplexity_key = os.getenv("PERPLEXITY_API_KEY")
-    openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    
-    # Model ve API key uyumunu kontrol et
-    model_lower = model.lower()
-    api_key = None
-    
-    if "openrouter" in model_lower:
-        api_key = openrouter_key
-        if not api_key:
-            warnings.warn(
-                f"OpenRouter model ({model}) seçildi ama OPENROUTER_API_KEY bulunamadı. "
-                "OpenRouter API key'i gerekli.",
-                UserWarning
-            )
-        # OpenRouter için base URL ayarla
-        if not os.getenv("DRG_BASE_URL"):
-            base_url = "https://openrouter.ai/api/v1"
-    elif "gemini" in model_lower:
-        api_key = gemini_key
-        if not api_key:
-            warnings.warn(
-                f"Gemini model ({model}) seçildi ama GEMINI_API_KEY bulunamadı. "
-                "Gemini API key'i gerekli.",
-                UserWarning
-            )
-    elif "anthropic" in model_lower or "claude" in model_lower:
-        # OpenRouter üzerinden değilse direkt Anthropic
-        api_key = anthropic_key
-        if not api_key:
-            warnings.warn(
-                f"Anthropic model ({model}) seçildi ama ANTHROPIC_API_KEY bulunamadı. "
-                "Anthropic API key'i gerekli.",
-                UserWarning
-            )
-    elif "perplexity" in model_lower:
-        api_key = perplexity_key
-        if not api_key:
-            warnings.warn(
-                f"Perplexity model ({model}) seçildi ama PERPLEXITY_API_KEY bulunamadı. "
-                "Perplexity API key'i gerekli.",
-                UserWarning
-            )
-        # Perplexity için base URL ayarla (eğer belirtilmemişse)
-        if not os.getenv("DRG_BASE_URL"):
-            base_url = "https://api.perplexity.ai"
-    elif "ollama" in model_lower:
-        # Ollama için API key gerekmez
-        api_key = None
-    else:
-        # OpenAI veya diğer modeller için
-        api_key = openai_key
-        if not api_key and not model_lower.startswith("ollama"):
-            warnings.warn(
-                f"Cloud model ({model}) seçildi ama OPENAI_API_KEY bulunamadı. "
-                "API key gerekli olabilir.",
-                UserWarning
-            )
-    
-    base_url = os.getenv("DRG_BASE_URL")
-    temperature = float(os.getenv("DRG_TEMPERATURE", "0.0"))
-    
-    # DSPy LM'ini konfigüre et
-    # OpenRouter için özel base URL (eğer belirtilmemişse)
-    if "openrouter" in model_lower and not base_url:
-        base_url = "https://openrouter.ai/api/v1"
-    
-    # Perplexity için özel base URL (eğer belirtilmemişse)
-    if "perplexity" in model_lower and not base_url:
-        base_url = "https://api.perplexity.ai"
-    
-    # DSPy LM kwargs - temel parametreler
-    lm_kwargs = {
-        "model": model,
-        "temperature": temperature,
-    }
-    
-    # OpenRouter için özel konfigürasyon (LiteLLM üzerinden)
-    if "openrouter" in model_lower:
-        # OpenRouter için model adını doğrula
-        if not model.startswith("openrouter/"):
-            # Eğer prefix yoksa ekle (LiteLLM formatı)
-            lm_kwargs["model"] = f"openrouter/{model}"
-        else:
-            # Zaten openrouter/ prefix'i var, direkt kullan
-            lm_kwargs["model"] = model
-        
-        # LiteLLM OpenRouter için api_key ve api_base kwargs içinde geçilmeli
-        if api_key:
-            # Environment variable olarak set et (LiteLLM bunu otomatik okur)
-            os.environ["OPENROUTER_API_KEY"] = api_key
-            # Ayrıca kwargs içinde de geç (bazı durumlarda gerekebilir)
-            if "kwargs" not in lm_kwargs:
-                lm_kwargs["kwargs"] = {}
-            lm_kwargs["kwargs"]["api_key"] = api_key
-            if base_url:
-                lm_kwargs["kwargs"]["api_base"] = base_url
-    elif api_key:
-        # Diğer servisler için api_key environment variable olarak set et
-        if "gemini" in model_lower:
-            os.environ["GEMINI_API_KEY"] = api_key
-        elif "anthropic" in model_lower or "claude" in model_lower:
-            os.environ["ANTHROPIC_API_KEY"] = api_key
-        elif "perplexity" in model_lower:
-            os.environ["PERPLEXITY_API_KEY"] = api_key
-        else:
-            os.environ["OPENAI_API_KEY"] = api_key
-        
-        # kwargs içinde de geç
-        if "kwargs" not in lm_kwargs:
-            lm_kwargs["kwargs"] = {}
-        lm_kwargs["kwargs"]["api_key"] = api_key
-        if base_url:
-            lm_kwargs["kwargs"]["api_base"] = base_url
-    
-    lm = dspy.LM(**lm_kwargs)
-    dspy.configure(lm=lm)
-    _lm_configured = True
+    except ImportError:
+        logger.warning("drg.config module not available, skipping LM configuration")
+        return
 
 
 def _get_extractor(schema: Union[DRGSchema, EnhancedDRGSchema]) -> KGExtractor:
@@ -408,7 +458,15 @@ def _get_extractor(schema: Union[DRGSchema, EnhancedDRGSchema]) -> KGExtractor:
     return _extractor
 
 
-def extract_typed(text: str, schema: Union[DRGSchema, EnhancedDRGSchema]) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str, str]]]:
+def extract_typed(
+    text: str,
+    schema: Union[DRGSchema, EnhancedDRGSchema],
+    enable_entity_resolution: bool = True,
+    enable_coreference_resolution: bool = False,
+    use_optimizer: bool = False,
+    optimizer_config: Optional[Any] = None,
+    training_examples: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str, str]]]:
     """
     Extract entities and relations from text using DSPy.
     
@@ -417,24 +475,67 @@ def extract_typed(text: str, schema: Union[DRGSchema, EnhancedDRGSchema]) -> Tup
     Args:
         text: Input text to extract from
         schema: DRGSchema defining allowed entity types and relations
+        enable_entity_resolution: Whether to enable entity resolution (merges duplicate entity names)
+        enable_coreference_resolution: Whether to enable coreference resolution (resolves pronouns/references to entities)
+        use_optimizer: Whether to use optimized extractor (requires training_examples)
+        optimizer_config: Optional OptimizerConfig for custom optimizer settings
+        training_examples: Optional list of training examples for optimizer. Format:
+            [{"text": str, "expected_entities": List[Tuple[str, str]], "expected_relations": List[Tuple[str, str, str]]}, ...]
     
     Returns:
         Tuple of (entities_typed, triples) where:
         - entities_typed: List of (entity_name, entity_type) tuples
         - triples: List of (source, relation, target) tuples
     """
+    # Get base extractor
     extractor = _get_extractor(schema)
+    
+    # Use optimizer if requested and training examples provided
+    if use_optimizer and training_examples:
+        if DRGOptimizer is None or OptimizerConfig is None:
+            logger.warning("Optimizer module not available, falling back to base extractor")
+        else:
+            try:
+                # Use provided config or default
+                if optimizer_config is None:
+                    optimizer_config = OptimizerConfig()
+                
+                # Create optimizer with training examples (can be passed to constructor)
+                optimizer = DRGOptimizer(
+                    schema=schema,
+                    config=optimizer_config,
+                    training_examples=training_examples  # Pass directly to constructor
+                )
+                
+                # Optimize extractor
+                logger.info(f"Optimizing extractor with {len(training_examples)} training examples...")
+                extractor = optimizer.optimize()  # This will raise RuntimeError if optimization fails
+                logger.info("Optimization completed, using optimized extractor")
+            except (RuntimeError, Exception) as e:
+                # optimizer.optimize() raises RuntimeError on failure (no silent fallback)
+                # Re-raise to inform user that optimization was requested but failed
+                logger.error(f"Optimizer failed: {e}")
+                raise RuntimeError(
+                    f"Optimizer optimization failed: {e}. "
+                    "If you want to proceed without optimization, set use_optimizer=False. "
+                    "Otherwise, check your training examples format and optimizer configuration."
+                ) from e
+    
     result = extractor(text=text)
     
     # KGExtractor artık zaten list of tuples döndürüyor
     entities_typed = result.entities if hasattr(result, 'entities') and result.entities else []
     triples = result.relations if hasattr(result, 'relations') and result.relations else []
     
-    # Ensure they are lists of tuples
+    # Validate types (should not happen if KGExtractor works correctly)
     if not isinstance(entities_typed, list):
-        entities_typed = []
+        error_msg = f"Expected list for entities, got {type(entities_typed).__name__}"
+        logger.error(f"Extract typed: {error_msg}")
+        raise RuntimeError(f"Extraction returned invalid entities type: {error_msg}")
     if not isinstance(triples, list):
-        triples = []
+        error_msg = f"Expected list for triples, got {type(triples).__name__}"
+        logger.error(f"Extract typed: {error_msg}")
+        raise RuntimeError(f"Extraction returned invalid triples type: {error_msg}")
     
     # Schema validation (sadece schema'ya uygun olanları döndür)
     normalized = _normalize_schema(schema)
@@ -459,6 +560,42 @@ def extract_typed(text: str, schema: Union[DRGSchema, EnhancedDRGSchema]) -> Tup
             
             if s_type and o_type and (s_type, r, o_type) in rel_types:
                 valid_triples.append((s, r, o))
+    
+    # Coreference Resolution: Resolve pronouns and references to explicit entities
+    # This should be applied BEFORE entity resolution, as it creates explicit mentions
+    # Example: "Elon Musk founded Tesla. He is the CEO." → "He" → "Elon Musk"
+    if enable_coreference_resolution and valid_entities:
+        if resolve_coreferences is None:
+            logger.warning("Coreference resolution module not available, skipping resolution")
+        else:
+            try:
+                valid_entities, valid_triples = resolve_coreferences(
+                    text=text,
+                    entities=valid_entities,
+                    relations=valid_triples,
+                    use_nlp=True  # Use NLP if available, falls back to heuristics otherwise
+                )
+                logger.info("Coreference resolution applied successfully")
+            except Exception as e:
+                logger.warning(f"Coreference resolution failed: {e}, continuing without resolution")
+    
+    # Entity Resolution: Merge duplicate entity references
+    # This is critical for KG quality - same entity appearing with different names
+    # (e.g., "Dr. Elena Vasquez", "Dr. Vasquez", "Dr. Elena") should be merged
+    # Applied AFTER coreference resolution to merge all mentions (including resolved pronouns)
+    if enable_entity_resolution and valid_entities:
+        if resolve_entities_and_relations is None:
+            logger.warning("Entity resolution module not available, skipping resolution")
+        else:
+            try:
+                valid_entities, valid_triples = resolve_entities_and_relations(
+                    valid_entities,
+                    valid_triples,
+                    similarity_threshold=0.85
+                )
+                logger.info("Entity resolution applied successfully")
+            except Exception as e:
+                logger.warning(f"Entity resolution failed: {e}, continuing without resolution")
     
     return valid_entities, valid_triples
 
@@ -508,8 +645,8 @@ class SchemaGeneration(dspy.Signature):
 1. **Entity Types**:
    - Extract ALL relevant entity types from the text (not just main entities)
    - Include supporting entities: locations, technologies, processes, organizations, etc.
-   - For each entity type, provide 3-5 real examples from the text
-   - Add meaningful properties that characterize each entity type
+- For each entity type, provide 3-5 real examples from the text
+- Add meaningful properties that characterize each entity type
 
 2. **Relations - MOST IMPORTANT**:
    - **DO NOT create a star-shaped graph** (all relations from one central entity)
@@ -535,8 +672,8 @@ class SchemaGeneration(dspy.Signature):
    - Total target: 30-50+ relations across all groups
 
 4. **Relation Details**:
-   - For each relation, provide:
-     * description: The reason/type of connection (what kind of relationship)
+- For each relation, provide:
+  * description: The reason/type of connection (what kind of relationship)
      * detail: Specific detail about why/how entities are connected in this way
 
 5. **Graph Structure - CRITICAL**:
@@ -592,10 +729,19 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
     Bu fonksiyon, verilen metni analiz ederek uygun entity tipleri (properties ve examples ile),
     relation grupları ve detaylı açıklamalar çıkarır ve bir EnhancedDRGSchema nesnesi döndürür.
     
+    NOTE: This function uses a detailed prompt (112 lines) in SchemaGeneration signature,
+    which is against DSPy's typical "declarative" philosophy of minimal prompts.
+    However, schema generation is a complex task requiring explicit instructions to produce
+    rich, interconnected schemas. The detailed prompt is intentional and necessary for
+    generating high-quality schemas with diverse relation patterns.
+    
+    For standard extraction tasks, use KGExtractor which follows DSPy's declarative approach
+    with minimal signatures and TypedPredictor for structured output.
+    
     Args:
         text: Analiz edilecek metin
-        max_retries: Rate limit hatası durumunda maksimum deneme sayısı
-        retry_delay: Denemeler arası bekleme süresi (saniye)
+        max_retries: Rate limit hatası durumunda maksimum deneme sayısı (DEPRECATED - retry handled by DSPy LM)
+        retry_delay: Denemeler arası bekleme süresi (saniye) (DEPRECATED - retry handled by DSPy LM)
     
     Returns:
         EnhancedDRGSchema: Metne uygun detaylı şema
@@ -627,55 +773,32 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
         sample_text = text
     
     # Schema generation signature'ı oluştur
+    # NOTE: ChainOfThought is used here because schema generation requires complex reasoning
+    # to create rich, interconnected schemas. For entity/relation extraction, TypedPredictor is preferred.
     schema_generator = dspy.ChainOfThought(SchemaGeneration)
     
-    # Şema oluştur (retry logic ile)
-    schema_result = None
-    for attempt in range(max_retries):
-        try:
-            if attempt > 0:
-                logger.info(f"Schema generation retry {attempt + 1}/{max_retries}...")
-            schema_result = schema_generator(text=sample_text)
-            logger.info("Schema generation tamamlandı")
-            break
-        except Exception as e:
-            error_str = str(e).lower()
-            if "rate limit" in error_str or "429" in error_str or "quota" in error_str:
-                if attempt < max_retries - 1:
-                    wait_time = retry_delay * (2 ** attempt)
-                    logger.warning(
-                        f"Rate limit hit during schema generation, retrying in {wait_time:.1f}s "
-                        f"(attempt {attempt + 1}/{max_retries})"
-                    )
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    logger.error(f"Rate limit error after {max_retries} attempts")
-                    raise
-            else:
-                raise
+    # Şema oluştur (retry logic DSPy LM class tarafından handle ediliyor)
+    # NOTE: Manual retry logic removed - DSPy LM class handles retries automatically via
+    # max_retries and backoff_factor parameters configured in drg.config.configure_lm()
+    try:
+        schema_result = schema_generator(text=sample_text)
+        logger.info("Schema generation tamamlandı")
+    except Exception as e:
+        logger.error(f"Schema generation failed: {e}")
+        raise RuntimeError(f"Schema generation failed: {e}. Check your LLM configuration and API keys.") from e
     
     # Parse JSON schema
     schema_str = schema_result.generated_schema if hasattr(schema_result, 'generated_schema') else "{}"
-    
-    # Clean markdown code blocks if present
-    if isinstance(schema_str, str):
-        # Remove markdown code block markers
-        schema_str = schema_str.strip()
-        if schema_str.startswith("```json"):
-            schema_str = schema_str[7:]  # Remove ```json
-        elif schema_str.startswith("```"):
-            schema_str = schema_str[3:]   # Remove ```
-        if schema_str.endswith("```"):
-            schema_str = schema_str[:-3]  # Remove trailing ```
-        schema_str = schema_str.strip()
-    
     try:
-        schema_data = json.loads(schema_str) if isinstance(schema_str, str) else schema_str
-    except (json.JSONDecodeError, TypeError) as e:
-        logger.error(f"Failed to parse schema JSON: {schema_str}")
-        logger.error(f"JSON parse error: {e}")
-        # Fallback: varsayılan enhanced şema
+        schema_data = _parse_json_output(schema_str, expected_format="object")
+    except ValueError as e:
+        logger.error(f"Failed to parse schema JSON: {e}")
+        logger.warning("Schema parsing failed, using default schema")
+        return _create_default_enhanced_schema()
+    
+    # Validate schema_data is not empty
+    if not schema_data or (isinstance(schema_data, dict) and not schema_data):
+        logger.error("Parsed schema JSON is empty, using default schema")
         logger.warning("Varsayılan enhanced şema kullanılıyor...")
         return _create_default_enhanced_schema()
     

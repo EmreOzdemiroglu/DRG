@@ -1,31 +1,14 @@
 # DRG Core Dependencies
-dspy>=2.4.0
-litellm>=1.0.0
+# These are the minimum required dependencies for basic DRG functionality
+# For feature-specific dependencies, use extras in pyproject.toml:
+#   pip install drg[openai]        # For OpenAI embeddings
+#   pip install drg[neo4j]         # For Neo4j graph persistence
+#   pip install drg[api]           # For API server
+#   pip install drg[all]           # For all optional dependencies
 
-# Optional: Embedding Providers
-openai>=1.0.0
-google-generativeai>=0.3.0
-sentence-transformers>=2.2.0
-
-# Optional: Vector Stores
-chromadb>=0.4.0
-
-# Optional: Graph Processing
-networkx>=3.0
-
-# Optional: Clustering
-python-louvain>=0.16
-leidenalg>=0.9.0
-scikit-learn>=1.3.0
-
-# Optional: Graph Persistence (Neo4j)
-neo4j>=5.0.0
-
-# Optional: API Server
-fastapi>=0.100.0
-uvicorn[standard]>=0.23.0
+dspy>=2.4.0,<3.0.0
 pydantic>=2.0.0
 
-# Development
-pytest>=7.0.0
-
+# Note: litellm is NOT required here - DSPy handles LLM providers internally
+# Optional dependencies are defined in pyproject.toml [project.optional-dependencies]
+# Use: pip install -e ".[feature]" or pip install drg[feature] for optional features

@@ -1,0 +1,21 @@
+{
+  "example_name": "1example",
+  "input_files": {
+    "schema": "inputs/1example_schema.json",
+    "text": "inputs/1example_text.txt"
+  },
+  "chunks": 6,
+  "entities": 0,
+  "relations": 0,
+  "kg_nodes": 0,
+  "kg_edges": 0,
+  "embedded_nodes": 0,
+  "clusters": 0,
+  "community_reports": 0,
+  "output_files": {
+    "schema": "outputs/1example_schema.json",
+    "kg": "outputs/1example_kg.json",
+    "summary": "outputs/1example_summary.json",
+    "community_reports": null
+  }
+}

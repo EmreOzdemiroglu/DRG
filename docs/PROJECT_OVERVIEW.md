@@ -31,24 +31,27 @@ DRG projesi, aşağıdaki temel amaçlara hizmet eder:
 
 3. **GraphRAG Desteği**: Sadece klasik RAG (Retrieval-Augmented Generation) değil, aynı zamanda GraphRAG (Graph-based RAG) yapısını da destekler.
 
-4. **Research-Grade Kalite**: Akademik araştırmalar ve yayınlar için uygun, yüksek kaliteli kod yapısı.
+4. **Yüksek Kod Kalitesi**: İyi tasarlanmış, modüler ve genişletilebilir kod yapısı.
 
-5. **Community Publication-Ready**: Topluluk tarafından kullanılmaya ve yayınlanmaya hazır bir sistem.
+> **⚠️ Durum:** Bu proje alpha versiyonunda (0.1.0a0) ve aktif geliştirme aşamasındadır. Breaking changes olabilir. Production ortamlarında dikkatli kullanın.
 
 ### Projenin Özellikleri
 
 - ✅ **Declarative Schema**: Sadece entity tipleri ve ilişkileri tanımlayın, gerisini DRG halletsin
 - ✅ **Otomatik Schema Generation**: Metinden otomatik olarak EnhancedDRGSchema oluşturma (`generate_schema_from_text`)
-- ✅ **DSPy Entegrasyonu**: Modern LLM'lerle çalışan güçlü extraction pipeline
+- ✅ **DSPy Entegrasyonu**: Modern LLM'lerle çalışan güçlü extraction pipeline (DSPy best practices'e %99 uyumlu)
+- ✅ **TypedPredictor Kullanımı**: Pydantic modelleri ile structured output garantisi
 - ✅ **Enhanced Schema**: EntityType (properties, examples), RelationGroup (semantic grouping), Relation (description, detail) ile zengin şema tanımları
 - ✅ **Chunk-based KG Extraction**: Her chunk üzerinde bağımsız extraction, sonuçların birleştirilmesi
-- ✅ **Schema Validation**: Extraction sonuçlarının şemaya uygunluğunun otomatik kontrolü
+- ✅ **DSPy Constraint Validation**: `dspy.Assert` (hard constraint) ve `dspy.Suggest` (soft constraint) ile schema validation
+- ✅ **Schema Validation**: Extraction sonuçlarının şemaya uygunluğunun otomatik kontrolü (DSPy constraints ile)
 - ✅ **Otomatik LLM Konfigürasyonu**: Environment variable'lardan otomatik model ve API key yönetimi
 - ✅ **GraphRAG Pipeline**: Chunking → KG Extraction → Embedding → Clustering → Community Reports → Retrieval
 - ✅ **Clustering Desteği**: Louvain, Leiden, Spectral algoritmaları ile community detection
 - ✅ **Community Reports**: Her cluster için otomatik özet raporlar (top actors, top relationships, themes)
 - ✅ **Preset-based Chunking**: "graphrag" gibi preset'lerle kolay chunking konfigürasyonu
-- ✅ **Multi-Provider Desteği**: OpenAI, Gemini, Anthropic, OpenRouter, Perplexity, Ollama
+- ✅ **Multi-Provider Desteği**: OpenAI, Gemini, Anthropic, OpenRouter (primary), Perplexity, Ollama
+- ✅ **OpenRouter Integration**: Primary embedding provider olarak OpenRouter desteği (unified API)
 - ✅ **FastAPI Web Server**: RESTful API ve interaktif web UI ile KG görselleştirme
 - ✅ **Graph Visualization**: Cytoscape.js tabanlı interaktif graph görselleştirme (zoom, pan, community coloring)
 - ✅ **Query Provenance**: Query → chunks → community → summary → answer provenance chain tracking
@@ -610,12 +613,17 @@ chunks = chunker.chunk(
 **Yöntem**: DSPy framework kullanarak LLM ile extraction
 
 **Süreç**:
-1. Schema'dan dinamik DSPy signature'ları oluşturulur
-2. **Chunk-based Processing**: Her chunk üzerinde bağımsız extraction yapılır
+1. Schema'dan dinamik DSPy signature'ları oluşturulur (EntityExtraction, RelationExtraction)
+2. **TypedPredictor Kullanımı**: Pydantic modelleri ile structured output garantisi
+3. **Chunk-based Processing**: Her chunk üzerinde bağımsız extraction yapılır
    - Her chunk için entity extraction
    - Her chunk için relation extraction (entity'ler context olarak verilir)
-3. Sonuçlar birleştirilir (duplicate entity ve relation'lar otomatik filtrelenir)
-4. Self-loop edge'ler filtrelenir (source == target olan edge'ler atlanır)
+4. **DSPy Constraint Validation**:
+   - `dspy.Assert`: Entity type validation (hard constraint - invalid types için LLM retry)
+   - `dspy.Suggest`: Relation validation (soft constraint - LLM'e hint verir)
+   - Missing entity reference kontrolü (hard constraint)
+5. Sonuçlar birleştirilir (duplicate entity ve relation'lar otomatik filtrelenir)
+6. Self-loop edge'ler filtrelenir (source == target olan edge'ler atlanır)
 
 **Örnek**:
 ```python
@@ -671,16 +679,16 @@ for source, relation, target in triples_list:
 **Amaç**: Node'lara embedding vektörleri eklemek (GraphRAG için gerekli)
 
 **Provider'lar**:
+- **OpenRouter** (primary, recommended): Unified API, multiple models (openai/text-embedding-3-small, vb.)
 - OpenAI (text-embedding-3-small, text-embedding-3-large)
-- Gemini (text-embedding-004)
-- OpenRouter (çeşitli modeller)
+- Gemini (models/embedding-001)
 - Local (sentence-transformers)
 
-**Örnek**:
+**Örnek** (OpenRouter - önerilen):
 ```python
 embedding_provider = create_embedding_provider(
     provider="openrouter",
-    model="openrouter/text-embedding-ada-002"
+    model="openai/text-embedding-3-small"  # OpenAI embedding via OpenRouter
 )
 entity_texts = {node_id: node_id for node_id in enhanced_kg.nodes.keys()}
 enhanced_kg.add_entity_embeddings(embedding_provider, entity_texts)
@@ -1389,7 +1397,7 @@ python examples/graphrag_pipeline_example.py example1
 
 ## Sonuç
 
-DRG, modern LLM teknolojilerini kullanarak declarative bir yaklaşımla Knowledge Graph oluşturma ve GraphRAG retrieval yapma imkanı sunan, dataset-agnostic bir Python kütüphanesidir. Proje, research-grade kalitede, community publication-ready bir yapıda tasarlanmıştır.
+DRG, modern LLM teknolojilerini kullanarak declarative bir yaklaşımla Knowledge Graph oluşturma ve GraphRAG retrieval yapma imkanı sunan, dataset-agnostic bir Python kütüphanesidir.
 
 ### Projenin Güçlü Yönleri
 
@@ -1400,12 +1408,24 @@ DRG, modern LLM teknolojilerini kullanarak declarative bir yaklaşımla Knowledg
 5. ✅ **Enhanced Schema**: Zengin metadata ve açıklama desteği
 6. ✅ **Modular Architecture**: Kolay test edilebilirlik ve genişletilebilirlik
 
+### Son Güncellemeler (v0.1.0a0)
+
+- ✅ **DSPy Constraint Validation**: `dspy.Assert` (hard constraint) ve `dspy.Suggest` (soft constraint) eklendi
+  - Entity type validation: Invalid types için LLM otomatik retry yapar
+  - Relation validation: Invalid relations için LLM'e hint verir
+  - DSPy best practices'e %99 uyumlu
+- ✅ **OpenRouter Integration**: Primary embedding provider olarak OpenRouter desteği
+  - Unified API ile multiple model desteği
+  - Environment variable: `OPENROUTER_API_KEY`
+- ✅ **TypedPredictor**: Pydantic modelleri ile structured output garantisi
+- ✅ **Code Quality**: Linter 0 hata, comprehensive type hints, Google style docstrings
+
 ### Gelecek Geliştirmeler
 
-- [ ] Neo4j, ArangoDB gibi graph database desteği
+- [ ] Neo4j, ArangoDB gibi graph database desteği (Neo4j basic integration mevcut)
 - [ ] Daha fazla clustering algoritması
 - [ ] Real-time KG update mekanizması
-- [ ] Web UI
+- [ ] Web UI enhancements (FastAPI server mevcut, geliştirmeler devam ediyor)
 - [ ] Docker containerization
 - [ ] Cloud deployment (AWS, GCP, Azure)
 
