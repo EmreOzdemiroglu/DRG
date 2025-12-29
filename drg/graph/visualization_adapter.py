@@ -39,7 +39,7 @@ class ProvenanceEdge:
 
 @dataclass
 class ProvenanceGraph:
-    """Complete provenance graph for explainable retrieval."""
+    """Complete provenance graph for explainable analysis/query flows."""
     nodes: List[ProvenanceNode]
     edges: List[ProvenanceEdge]
     query: str
@@ -184,6 +184,11 @@ class VisualizationAdapter:
                     "label": edge_label,
                     "relationship_type": edge.relationship_type,
                     "relationship_detail": edge.relationship_detail,
+                    "relationship_description": (
+                        edge.metadata.get("relationship_description")
+                        or edge.metadata.get("description")
+                        or ""
+                    ),
                     "weight": float(weight),
                     "metadata": edge.metadata,
                 },

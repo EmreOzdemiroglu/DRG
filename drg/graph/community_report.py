@@ -1,5 +1,5 @@
 """
-Community Report Module - GraphRAG Style
+Community Report Module
 
 Provides cluster-based community reports with:
 - Summary generation
@@ -19,7 +19,7 @@ from .kg_core import EnhancedKG, Cluster, KGNode, KGEdge
 @dataclass
 class CommunityReport:
     """
-    Community/Cluster report in GraphRAG style.
+    Community/Cluster report with summary and themes.
     """
     cluster_id: str
     summary: str

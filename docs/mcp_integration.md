@@ -21,7 +21,7 @@ API, agent'ların ihtiyaçlarını ön planda tutar:
 
 - **Declarative Operations**: Agent'lar ne istediklerini tanımlar, sistem nasıl yapılacağını halleder
 - **State Management**: Schema ve knowledge graph'lar ID'lerle yönetilir
-- **Multiple Formats**: Export işlemleri için çoklu format desteği (JSON, JSON-LD, GraphRAG)
+- **Multiple Formats**: Export işlemleri için çoklu format desteği (JSON, JSON-LD, enriched)
 
 ### 3. Modular Architecture
 
@@ -351,7 +351,7 @@ Knowledge graph'ı belirtilen formatta export eder.
 **Desteklenen Formatlar:**
 - `json`: Standart JSON formatı
 - `jsonld`: JSON-LD formatı (semantic web uyumlu)
-- `graphrag`: GraphRAG uyumlu format
+- `enriched`: Zenginleştirilmiş export (entities + relationships + communities)
 
 **Response:**
 ```json
@@ -560,7 +560,7 @@ if extract_response.result:
     export_response = api.handle_request(
         MCPRequest(
             method="drg/export_kg",
-            params={"kg_id": "my_kg", "format": "graphrag"},
+            params={"kg_id": "my_kg", "format": "enriched"},
             id=4,
         )
     )

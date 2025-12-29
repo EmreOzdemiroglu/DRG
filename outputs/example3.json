@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "id": "Tesla Inc.",
+      "type": "Company"
+    },
+    {
+      "id": "Tesla Roadster",
+      "type": "Product"
+    },
+    {
+      "id": "Model S",
+      "type": "Product"
+    },
+    {
+      "id": "Full Self-Driving (FSD)",
+      "type": "Product"
+    },
+    {
+      "id": "Powerwall",
+      "type": "Product"
+    },
+    {
+      "id": "Solar Roof",
+      "type": "Product"
+    },
+    {
+      "id": "Cybertruck",
+      "type": "Product"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Tesla Inc.",
+      "type": "produces",
+      "target": "Tesla Roadster"
+    },
+    {
+      "source": "Tesla Inc.",
+      "type": "produces",
+      "target": "Model S"
+    },
+    {
+      "source": "Tesla Inc.",
+      "type": "produces",
+      "target": "Full Self-Driving (FSD)"
+    },
+    {
+      "source": "Tesla Inc.",
+      "type": "produces",
+      "target": "Powerwall"
+    },
+    {
+      "source": "Tesla Inc.",
+      "type": "produces",
+      "target": "Solar Roof"
+    },
+    {
+      "source": "Tesla Inc.",
+      "type": "produces",
+      "target": "Cybertruck"
+    }
+  ]
+}

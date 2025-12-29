@@ -1,5 +1,5 @@
 """
-Enriched Relationship Model - GraphRAG Format
+Enriched Relationship Model
 
 This module provides enriched relationship modeling with:
 - Structured relationship representation (source, target, type, detail, confidence, source_ref)
@@ -163,7 +163,7 @@ RELATIONSHIP_CATEGORIES = {
 @dataclass
 class EnrichedRelationship:
     """
-    GraphRAG-format enriched relationship representation.
+    Enriched relationship representation with type, detail, and metadata.
     
     Each relationship includes:
     - source: Source entity identifier
@@ -217,8 +217,8 @@ class EnrichedRelationship:
             source_ref=data.get("source_ref"),
         )
     
-    def to_graphrag_format(self) -> Dict[str, Any]:
-        """Convert to GraphRAG-compatible format."""
+    def to_enriched_format(self) -> Dict[str, Any]:
+        """Convert to enriched format dictionary."""
         return {
             "source": self.source,
             "target": self.target,

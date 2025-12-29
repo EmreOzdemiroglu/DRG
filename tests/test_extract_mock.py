@@ -208,6 +208,30 @@ class TestSchemaValidation:
         assert all(entity_type == "Person" for _, entity_type in entities)
         assert ("Invalid", "UnknownType") not in entities
 
+    @patch('drg.extract._get_extractor')
+    @patch('drg.extract.resolve_entities_and_relations')
+    def test_reverse_relation_converted_to_direct(self, mock_resolve, mock_get_extractor):
+        """Schema has only direct relation, but extractor returns reverse. Should be normalized safely."""
+        mock_extractor = Mock()
+        mock_result = Mock()
+        mock_result.entities = [("Apple", "Company"), ("iPhone", "Product")]
+        mock_result.relations = [("iPhone", "produced_by", "Apple")]  # reverse direction
+        mock_extractor.return_value = mock_result
+        mock_get_extractor.return_value = mock_extractor
+
+        # No resolution changes; pass-through
+        mock_resolve.side_effect = lambda e, r, **kwargs: (e, r)
+
+        schema = DRGSchema(
+            entities=[Entity("Company"), Entity("Product")],
+            relations=[Relation("produces", "Company", "Product")],
+        )
+
+        entities, relations = extract_typed("dummy", schema, enable_entity_resolution=False)
+        assert ("Apple", "Company") in entities
+        assert ("iPhone", "Product") in entities
+        assert ("Apple", "produces", "iPhone") in relations
+
 
 class TestEntityResolutionIntegration:
     """Integration tests for entity resolution."""

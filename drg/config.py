@@ -10,6 +10,7 @@ import logging
 from typing import Optional
 
 import dspy
+from .utils.env_loader import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,9 @@ class LMConfig:
         """
         if self._configured:
             return
+
+        # Load local .env if present (keeps API keys out of code)
+        load_dotenv(".env", override=False)
         
         # Environment variable'lardan otomatik oku
         model = os.getenv("DRG_MODEL", "openai/gpt-4o-mini")
@@ -102,6 +106,7 @@ class LMConfig:
         
         base_url = os.getenv("DRG_BASE_URL")
         temperature = float(os.getenv("DRG_TEMPERATURE", "0.0"))
+        max_tokens = int(os.getenv("DRG_MAX_TOKENS", "1500"))  # Bütçe koruması için sınır
         
         # DSPy LM'ini konfigüre et
         # OpenRouter için özel base URL (eğer belirtilmemişse)
@@ -116,6 +121,7 @@ class LMConfig:
         lm_kwargs = {
             "model": model,
             "temperature": temperature,
+            "max_tokens": max_tokens,
         }
         
         # OpenRouter için özel konfigürasyon (LiteLLM üzerinden)

@@ -3,19 +3,15 @@ DRG API Server Example
 
 This example demonstrates how to:
 1. Load a knowledge graph
-2. Create a GraphRAG retriever
-3. Start the FastAPI server
-4. Access the web UI and API endpoints
+2. Start the FastAPI server
+3. Access the web UI and API endpoints
 
 Usage:
-    # Set OpenRouter API key as environment variable (önerilen)
-    export OPENROUTER_API_KEY=sk-or-v1-...
-    python examples/api_server_example.py
-    
-    # Or set Neo4j credentials (optional)
+    # Set Neo4j credentials (optional)
     export NEO4J_URI=bolt://localhost:7687
     export NEO4J_USER=neo4j
     export NEO4J_PASSWORD=your_password
+    python examples/api_server_example.py
 """
 
 import os
@@ -28,8 +24,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from drg.graph import EnhancedKG
 from drg.graph.neo4j_exporter import Neo4jConfig
 from drg.graph.kg_core import KGNode, KGEdge, Cluster
-from drg.embedding.providers import create_embedding_provider
-from drg.retrieval.graphrag import GraphRAGRetriever
 from drg.api import DRGAPIServer
 
 
@@ -97,10 +91,20 @@ def main():
     import sys
     import glob
     from datetime import datetime
+    import re
     
+    # Optional: --port <N> (or env DRG_API_PORT)
+    port = int(os.getenv("DRG_API_PORT", "8000"))
+    argv = list(sys.argv[1:])
+    if "--port" in argv:
+        idx = argv.index("--port")
+        if idx + 1 < len(argv):
+            port = int(argv[idx + 1])
+            del argv[idx:idx + 2]
+
     # Example name: command line argument > environment variable > auto-detect latest > default
-    if len(sys.argv) > 1:
-        example_name = sys.argv[1]
+    if len(argv) > 0:
+        example_name = argv[0]
         if example_name.isdigit():
             example_name = f"{example_name}example"
     elif os.getenv("DRG_EXAMPLE"):
@@ -125,77 +129,98 @@ def main():
     print(f"📌 Example seçimi: {example_name}")
     print(f"   (Değiştirmek için: export DRG_EXAMPLE=3example veya python {sys.argv[0]} 3)")
     
-    # Load knowledge graph from file if exists, otherwise use sample
-    kg_path = Path(f"outputs/{example_name}_kg.json")
-    if kg_path.exists():
-        print("\n1. Loading knowledge graph from file...")
-        import json
-        with open(kg_path, "r", encoding="utf-8") as f:
-            kg_data = json.load(f)
+    def _try_load_kg_file(path: Path) -> EnhancedKG | None:
+        """Load a KG JSON file into EnhancedKG.
         
+        Supports both:
+        - EnhancedKG JSON (nodes/edges/clusters with relationship_type keys)
+        - Legacy CLI KG JSON (nodes/edges with edge key 'type')
+        """
+        if not path.exists():
+            return None
+        import json
+        with open(path, "r", encoding="utf-8") as f:
+            kg_data = json.load(f)
+
         kg = EnhancedKG()
-        # Load nodes
+
+        # Load nodes (both formats share: {"id": "...", "type": "..."} at minimum)
         for node_data in kg_data.get("nodes", []):
-            node = KGNode.from_dict(node_data)
-            kg.add_node(node)
-        # Load edges
+            try:
+                node = KGNode.from_dict(node_data)
+            except Exception:
+                node = KGNode(
+                    id=node_data.get("id", ""),
+                    type=node_data.get("type"),
+                    properties=node_data.get("properties", {}) or {},
+                    metadata=node_data.get("metadata", {}) or {},
+                )
+            if node.id:
+                kg.add_node(node)
+
+        # Load edges (Enhanced format vs legacy format)
         for edge_data in kg_data.get("edges", []):
-            edge = KGEdge.from_dict(edge_data)
-            # Make sure source and target nodes exist
+            # EnhancedKG edge format
+            if "relationship_type" in edge_data:
+                edge = KGEdge.from_dict(edge_data)
+            # Legacy CLI edge format: {"source": s, "type": r, "target": o}
+            else:
+                src = edge_data.get("source")
+                dst = edge_data.get("target")
+                rel = edge_data.get("type") or edge_data.get("relationship_type")
+                if not (src and dst and rel):
+                    continue
+                edge = KGEdge(
+                    source=src,
+                    target=dst,
+                    relationship_type=rel,
+                    relationship_detail=f"{src} {rel} {dst}",
+                    metadata=edge_data.get("metadata", {}) or {},
+                )
+
+            # Ensure nodes exist
             if edge.source not in kg.nodes:
                 kg.add_node(KGNode(id=edge.source, type=None))
             if edge.target not in kg.nodes:
                 kg.add_node(KGNode(id=edge.target, type=None))
             kg.add_edge(edge)
-        # Load clusters
+
+        # Load clusters if present (only EnhancedKG export includes it)
         for cluster_data in kg_data.get("clusters", []):
-            cluster = Cluster.from_dict(cluster_data)
-            kg.add_cluster(cluster)
+            try:
+                cluster = Cluster.from_dict(cluster_data)
+                kg.add_cluster(cluster)
+            except Exception:
+                # If cluster is malformed, skip rather than failing the UI.
+                continue
+
+        return kg
+
+    # Load knowledge graph from file if exists, otherwise use sample
+    kg_path = Path(f"outputs/{example_name}_kg.json")
+    kg = _try_load_kg_file(kg_path)
+
+    # Backward compatibility: if full pipeline output doesn't exist, fall back to CLI output:
+    # outputs/example{N}.json (where example_name is like "4example")
+    if kg is None:
+        m = re.match(r"^(\d+)example$", example_name)
+        if m:
+            legacy_path = Path(f"outputs/example{m.group(1)}.json")
+            kg = _try_load_kg_file(legacy_path)
+            if kg is not None:
+                kg_path = legacy_path
+
+    if kg is not None:
+        print("\n1. Loading knowledge graph from file...")
+        print(f"   📄 KG file: {kg_path}")
         print(f"   ✅ Loaded KG with {len(kg.nodes)} nodes, {len(kg.edges)} edges, {len(kg.clusters)} clusters")
     else:
         print("\n1. Creating sample knowledge graph...")
         kg = create_sample_kg()
         print(f"   ✅ Created KG with {len(kg.nodes)} nodes, {len(kg.edges)} edges, {len(kg.clusters)} clusters")
     
-    # Create embedding provider (optional - only needed for retrieval)
-    print("\n2. Creating embedding provider...")
-    retriever = None
-    
-    # Check for API key (OpenRouter - primary choice)
-    openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    
-    if not openrouter_key:
-        print("   ⚠️  OPENROUTER_API_KEY environment variable not set")
-        print("   ℹ️  Set it with: export OPENROUTER_API_KEY=sk-or-v1-...")
-        print("   ℹ️  API server will work but query functionality will be limited")
-    else:
-        try:
-            # Use OpenRouter embedding provider
-            print("   ℹ️  Using OpenRouter embedding provider")
-            embedding_provider = create_embedding_provider(
-                provider="openrouter",
-                model="openai/text-embedding-3-small",
-            )
-            print("   ✅ Embedding provider created")
-            
-            # Add embeddings to entities
-            kg.add_entity_embeddings(embedding_provider)
-            print("   ✅ Entity embeddings added")
-            
-            # Create GraphRAG retriever
-            retriever = GraphRAGRetriever(
-                embedding_provider=embedding_provider,
-                knowledge_graph=kg,
-                similarity_threshold=0.3,
-                max_hops=2,
-            )
-            print("   ✅ GraphRAG retriever created")
-        except Exception as e:
-            print(f"   ⚠️  Could not create embedding provider/retriever: {e}")
-            print("   ℹ️  API server will work but query functionality will be limited")
-            retriever = None
-    
     # Optional: Neo4j configuration (comment out if not using Neo4j)
+    print("\n2. Neo4j configuration...")
     neo4j_config = None
     neo4j_uri = os.getenv("NEO4J_URI")
     if neo4j_uri:
@@ -205,16 +230,15 @@ def main():
             password=os.getenv("NEO4J_PASSWORD", "password"),
             database=os.getenv("NEO4J_DATABASE", "neo4j"),
         )
-        print("\n3. Neo4j configuration loaded")
+        print("   ✅ Neo4j configuration loaded")
     else:
-        print("\n3. Neo4j not configured (set NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD to enable)")
+        print("   ℹ️  Neo4j not configured (set NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD to enable)")
     
     # Create API server
-    print("\n4. Creating API server...")
+    print("\n3. Creating API server...")
     server = DRGAPIServer(
         kg=kg,
         neo4j_config=neo4j_config,
-        graphrag_retriever=retriever,
     )
     print("   ✅ API server created")
     
@@ -222,13 +246,13 @@ def main():
     print("\n" + "=" * 70)
     print("Starting DRG API Server...")
     print("=" * 70)
-    print("\n🌐 Web UI: http://localhost:8000")
-    print("📚 API Docs: http://localhost:8000/docs")
-    print("🔍 Graph API: http://localhost:8000/api/graph")
-    print("👥 Communities API: http://localhost:8000/api/communities")
+    print(f"\n🌐 Web UI: http://localhost:{port}")
+    print(f"📚 API Docs: http://localhost:{port}/docs")
+    print(f"🔍 Graph API: http://localhost:{port}/api/graph")
+    print(f"👥 Communities API: http://localhost:{port}/api/communities")
     print("\nPress Ctrl+C to stop the server\n")
     
-    server.run(host="0.0.0.0", port=8000, reload=False)
+    server.run(host="0.0.0.0", port=port, reload=False)
 
 
 if __name__ == "__main__":

@@ -72,18 +72,6 @@ Sistem, monolitik bir yapı içinde modüler bileşenlerden oluşur:
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    VECTOR STORE LAYER                           │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │  Vector Database (e.g., Chroma, Qdrant, Pinecone)   │    │
-│  │  - Chunk Embeddings                                  │    │
-│  │  - Metadata Indexing                                │    │
-│  │  - Hybrid Search Support                            │    │
-│  └──────────────────────────────────────────────────────┘    │
-│                          │                                      │
-└──────────────────────────┼──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
 │                    KNOWLEDGE GRAPH LAYER                        │
 │  ┌──────────────────────────────────────────────────────┐    │
 │  │  Entity & Relation Extraction (DRG)                  │    │
@@ -97,25 +85,6 @@ Sistem, monolitik bir yapı içinde modüler bileşenlerden oluşur:
 │  │  - Node embeddings (optional)                        │    │
 │  │  - Edge weights                                      │    │
 │  │  - Graph algorithms                                  │    │
-│  └──────────────────────────────────────────────────────┘    │
-│                          │                                      │
-└──────────────────────────┼──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    RETRIEVAL LAYER                              │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │  RAG Retrieval                                       │    │
-│  │  - Vector similarity search                          │    │
-│  │  - Metadata filtering                                │    │
-│  │  - Re-ranking                                        │    │
-│  └──────────────────────────────────────────────────────┘    │
-│                          │                                      │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │  GraphRAG Retrieval (DRG Search)                     │    │
-│  │  - Graph traversal algorithms                        │    │
-│  │  - Hybrid scoring (semantic + graph distance)        │    │
-│  │  - Multi-hop reasoning                               │    │
 │  └──────────────────────────────────────────────────────┘    │
 │                          │                                      │
 └──────────────────────────┼──────────────────────────────────────┘
@@ -180,18 +149,10 @@ Sistem, monolitik bir yapı içinde modüler bileşenlerden oluşur:
 - Semantic tagging opsiyonel olmalı (cost/performance trade-off)
 - Tagging model'i chunking'den bağımsız olmalı
 
-### 3.4 Vector Store Layer
+### 3.4 (Kapsam Dışı) Vector Store Katmanı
 
-**Sorumluluklar:**
-- Embedding storage
-- Metadata indexing
-- Similarity search
-- Hybrid search support (vector + metadata)
-
-**Tasarım Kararları:**
-- Vector store abstraction (Chroma, Qdrant, Pinecone, etc.)
-- Metadata schema'sı genişletilebilir
-- Batch insertion optimizasyonu
+Bu repo, “serving/arama” katmanı hedeflemediği için vektör tabanlı indeks/benzerlik bileşeni **kapsam dışına alınmıştır** ve koddan çıkarılmıştır.
+Benzerlik temelli yardımcı sinyaller (ör. entity merge destek sinyali) gerekiyorsa, bu **embedding provider** üzerinden opsiyonel olarak eklenebilir.
 
 ### 3.5 Knowledge Graph Layer
 
@@ -206,18 +167,16 @@ Sistem, monolitik bir yapı içinde modüler bileşenlerden oluşur:
 - Graph database abstraction (Neo4j, NetworkX, etc.)
 - Node/edge metadata preservation
 
-### 3.6 Retrieval Layer
+### 3.6 Sorgu & Analiz Yardımcıları
 
 **Sorumluluklar:**
-- RAG retrieval (vector similarity)
-- GraphRAG retrieval (DRG search algorithms)
-- Hybrid retrieval (combining both)
-- Re-ranking
+- Knowledge graph üzerinde sorgulama ve analiz yardımcıları (graph traversal, komşuluk genişletme)
+- Community report üretimi ve özetleme
+- Export/visualization için veri hazırlama
 
 **Tasarım Kararları:**
-- Retrieval strategy pluggable
-- Scoring function konfigüre edilebilir
-- Multi-stage retrieval (coarse → fine)
+- Bu proje bir “serving/arama framework” değildir; odak **KG extraction + graph analiz/çıktı**dır.
+- KG odaklı analiz/sorgu yardımcıları modüler olmalı.
 
 ### 3.7 Clustering & Summarization Layer
 
@@ -292,7 +251,7 @@ Her graph edge aşağıdaki metadata'yı taşır:
 ### 5.1 Chunking Trade-offs
 
 **Token Window Size:**
-- **512 tokens**: Daha fazla chunk, daha granular retrieval, daha yüksek storage cost
+- **512 tokens**: Daha fazla chunk, daha ince-granular bağlam, daha yüksek maliyet
 - **1024 tokens**: Daha az chunk, daha geniş context, daha düşük storage cost
 - **Karar**: 512-1024 arası konfigüre edilebilir, varsayılan 768
 
@@ -315,17 +274,15 @@ Her graph edge aşağıdaki metadata'yı taşır:
 - **Portability**: Model lock-in riski
 - **Semantic Consistency**: Cross-domain performance
 
-### 5.3 Retrieval Trade-offs
+### 5.3 Sorgulama/Analiz Trade-off'ları
 
-**RAG vs GraphRAG:**
-- **RAG (Vector Search)**: Hızlı, basit, semantic similarity'ye dayalı
-- **GraphRAG (DRG Search)**: Daha yavaş, daha kompleks, graph structure'ı kullanır
-- **Hybrid**: Her ikisini birleştirir, en iyi sonuç ama en yüksek cost
+**KG Query & Analysis:**
+- **Graph traversal**: İlişkisel sorular için güçlü; graph kalitesine bağlı
+- **Community reports**: Büyük graph'larda yorumlanabilirlik sağlar; üretim maliyetine bağlı
 
 **Karar Kriterleri:**
-- **Query Type**: Factual vs relational queries
-- **Graph Density**: Sparse graph'larda GraphRAG avantajı azalır
-- **Latency Requirements**: Real-time vs batch
+- **Graph Quality**: Extraction kalitesi düşükse traversal sonuçları da zayıflar
+- **Latency Requirements**: Online vs batch analiz
 
 ## 6. Genişletilebilirlik ve Extension Points
 
@@ -333,7 +290,6 @@ Her graph edge aşağıdaki metadata'yı taşır:
 
 - **Chunking Strategy**: Token-based, sentence-based, paragraph-based, semantic-based
 - **Embedding Provider**: OpenAI, Gemini, OpenRouter, Local models
-- **Vector Store**: Chroma, Qdrant, Pinecone, FAISS
 - **Graph Database**: Neo4j, NetworkX, ArangoDB
 - **Clustering Algorithm**: Louvain, Leiden, Spectral, Custom
 
@@ -351,8 +307,7 @@ Domain-specific optimizasyonlar core pipeline'ı değiştirmeden eklenebilir:
 
 - **Chunking Quality**: Entity boundary preservation, semantic coherence
 - **Embedding Quality**: Semantic similarity accuracy, cross-domain consistency
-- **Retrieval Accuracy**: Precision@K, Recall@K, MRR (Mean Reciprocal Rank)
-- **Graph Quality**: Entity extraction F1, relation extraction F1, graph completeness
+- **Graph Quality**: Entity extraction F1, relation extraction F1, graph completeness, duplicate entity oranı
 
 ### 7.2 Multi-Dataset Evaluation
 
@@ -364,19 +319,16 @@ Domain-specific optimizasyonlar core pipeline'ı değiştirmeden eklenebilir:
 
 Her dataset için:
 - Chunking quality analysis
-- Semantic retrieval accuracy
+- KG extraction kalite metrikleri (entity/relation F1, duplicate oranı, cross-chunk edge retention)
 - Entity extraction effectiveness
 - Failure cases ve edge behaviors
 
 ### 7.3 Comparison Framework
 
-- **Baseline**: Classic RAG (vector search only)
-- **Experimental**: GraphRAG (DRG search)
-- **Hybrid**: Combined approach
+Bu repo için karşılaştırma ekseni “serving/arama framework’leri” değil, pipeline bileşenlerinin kalite/sağlamlık etkisidir:
 
-Metrics:
-- Retrieval accuracy (Precision@K, Recall@K)
-- Query latency
-- Cost per query
-- Interpretability scores
+- Chunking stratejilerinin extraction kalitesine etkisi
+- Schema sampling stratejilerinin kapsama etkisi
+- Coreference/entity resolution post-process etkisi
+- Cross-chunk context injection (deterministik snippet) etkisi
 

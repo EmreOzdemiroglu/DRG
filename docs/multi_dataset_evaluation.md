@@ -2,7 +2,7 @@
 
 ## 1. Genel Bakış
 
-Multi-dataset evaluation, pipeline'ın farklı domain'lerdeki performansını değerlendirir. 3-4 heterojen dataset üzerinde chunking quality, semantic retrieval accuracy ve entity extraction effectiveness analiz edilir.
+Multi-dataset evaluation, pipeline'ın farklı domain'lerdeki performansını değerlendirir. 3-4 heterojen dataset üzerinde chunking quality, **KG extraction kalite metrikleri** ve entity/relation extraction effectiveness analiz edilir.
 
 ## 2. Dataset Seçimi
 
@@ -36,7 +36,7 @@ Multi-dataset evaluation, pipeline'ın farklı domain'lerdeki performansını de
 
 **Evaluation Focus:**
 - Chunking quality: Character/plot boundary preservation
-- Semantic retrieval: Temporal queries ("what happened after X?")
+- KG extraction: Temporal/cross-chunk ilişki sürekliliği (kanıtlı edge retention)
 - Entity extraction: Character entity consistency
 
 #### 2.2.2 Factual Text (Wikipedia biography)
@@ -55,7 +55,7 @@ Multi-dataset evaluation, pipeline'ın farklı domain'lerdeki performansını de
 
 **Evaluation Focus:**
 - Chunking quality: Section boundary preservation
-- Semantic retrieval: Factual queries ("when did X happen?")
+- KG extraction: Factual ilişkilerde precision/recall ve duplicate entity oranı
 - Entity extraction: Entity relationship accuracy
 
 #### 2.2.3 Technical/Structured Document
@@ -75,7 +75,7 @@ Multi-dataset evaluation, pipeline'ın farklı domain'lerdeki performansını de
 
 **Evaluation Focus:**
 - Chunking quality: Code block/table atomicity
-- Semantic retrieval: Technical queries ("how to use API X?")
+- KG extraction: Technical entity/relation (function/class/config) çıkarımı
 - Entity extraction: Code entity extraction (functions, classes)
 
 #### 2.2.4 Informal Dialogue (Chat/Forum)
@@ -95,7 +95,7 @@ Multi-dataset evaluation, pipeline'ın farklı domain'lerdeki performansını de
 
 **Evaluation Focus:**
 - Chunking quality: Conversation turn boundary preservation
-- Semantic retrieval: Context-aware queries ("what did user X say?")
+- KG extraction: Konuşmacı/entity tutarlılığı + coreference davranışı
 - Entity extraction: User entity extraction, topic extraction
 
 ## 3. Evaluation Metrics
@@ -297,22 +297,22 @@ target: coherence_ratio > 1.2
 - Context switching handling important
 - Smaller window size (512 tokens)
 
-### 5.2 Retrieval Sensitivity
+### 5.2 Graph Analiz / Sorgu Hassasiyeti
 
 **Narrative Text:**
 - Temporal queries challenging
 - Character-centric queries work well
-- GraphRAG helps with character relationships
+- İlişkisel sorular graph kalitesine bağlıdır; community raporları yorumlanabilirliği artırır
 
 **Factual Text:**
 - Factual queries work well
 - Entity-centric queries excellent
-- Classic RAG sufficient
+- Entity-centric sorgular graph üzerinde iyi çalışır (entity resolution kalitesi kritik)
 
 **Technical Documents:**
 - Technical terminology challenging
-- Code-aware retrieval important
-- Hybrid search (vector + keyword) helps
+- Teknik terimlerde schema ve normalizasyon kritik; embedding opsiyonel yardımcı olabilir
+- Teknik terimlerde schema ve normalizasyon kritik; embedding opsiyonel yardımcı olabilir
 
 **Dialogue:**
 - Context switching challenging
@@ -347,12 +347,12 @@ target: coherence_ratio > 1.2
 
 **Case 1: Entity Boundary Violation**
 - **Scenario**: Character name chunk boundary'de kesilmiş
-- **Impact**: Entity extraction fails, retrieval misses context
+- **Impact**: Entity extraction fails, ilişkiler eksik kalır (kanıt/context kaybı)
 - **Mitigation**: Overlap strategy, boundary-aware chunking
 
 **Case 2: Code Block Fragmentation**
 - **Scenario**: Code block chunk boundary'de kesilmiş
-- **Impact**: Code syntax broken, technical retrieval fails
+- **Impact**: Code syntax broken, teknik entity/relation çıkarımı bozulur
 - **Mitigation**: Atomic code block preservation
 
 **Case 3: Table Fragmentation**
@@ -360,22 +360,22 @@ target: coherence_ratio > 1.2
 - **Impact**: Table structure lost, information incomplete
 - **Mitigation**: Atomic table preservation
 
-### 6.2 Retrieval Failures
+### 6.2 Graph Analiz Failures
 
 **Case 1: Semantic Drift**
 - **Scenario**: Query semantic olarak farklı yorumlanmış
-- **Impact**: Wrong chunks retrieved
-- **Mitigation**: Query expansion, re-ranking
+- **Impact**: Analiz/sorgu beklentisi ile graph içeriği uyumsuz görünür
+- **Mitigation**: Şema/sampling iyileştirmesi + extraction kalite artırımı
 
 **Case 2: Entity Mismatch**
 - **Scenario**: Query entity'si graph'da yok
-- **Impact**: GraphRAG fails, fallback to RAG
+- **Impact**: Graph traversal sonuç vermez; schema/sampling/extraction iyileştirmesi gerekir
 - **Mitigation**: Entity normalization, fuzzy matching
 
 **Case 3: Context Loss**
 - **Scenario**: Multi-hop query, intermediate context lost
-- **Impact**: Incomplete retrieval
-- **Mitigation**: Path preservation, context window expansion
+- **Impact**: Multi-hop açıklamalar eksik kalır; ara düğüm/edge yoksa yol kurulamaz
+- **Mitigation**: Cross-chunk two-pass + deterministik bağlam enjeksiyonu (bütçeli) + şema kapsaması
 
 ### 6.3 Entity Extraction Failures
 
@@ -399,17 +399,17 @@ target: coherence_ratio > 1.2
 ### 7.1 Dataset Preparation
 
 1. **Dataset Collection**: 3-4 heterojen dataset topla
-2. **Annotation**: Ground truth entity'leri, relations'ları, relevant chunk'ları annotate et
-3. **Query Generation**: Her dataset için 20-30 query oluştur
+2. **Annotation**: Ground truth entity'leri, relations'ları, temporal/negation işaretlerini annotate et (mümkünse)
+3. **Task Generation**: Her dataset için KG kalite test senaryoları oluştur (cross-chunk, coref, implicit, temporal, negation)
 4. **Split**: Train/validation/test split (80/10/10)
 
 ### 7.2 Evaluation Execution
 
 1. **Chunking**: Her dataset'i chunk'la, quality metrics hesapla
-2. **Embedding**: Chunk'ları embed et, vector store'a ekle
+2. **Embedding (opsiyonel)**: Entity resolution/coreference için embedding provider ile kalite kıyasla
 3. **Graph Construction**: Entity/relation extraction, graph oluştur
-4. **Retrieval**: Query'leri çalıştır, retrieval metrics hesapla
-5. **Comparison**: RAG vs GraphRAG vs Hybrid karşılaştır
+4. **Graph Query/Analysis**: Graph traversal ve community rapor kalitesini değerlendir
+5. **Comparison**: Chunking/sampling/postprocess varyantlarını karşılaştır
 
 ### 7.3 Reporting
 
@@ -427,10 +427,8 @@ target: coherence_ratio > 1.2
 - Overlap: 20%
 - Strategy: Sentence-aware, character entity tracking
 
-**Retrieval:**
-- Primary: GraphRAG (character relationships)
-- Secondary: RAG (semantic queries)
-- Hybrid: Reciprocal rank fusion
+**Graph Query/Analysis:**
+- Graph traversal + community raporları (karakter/olay ilişkileri için)
 
 **Entity Extraction:**
 - Schema: Character, Location, Event entities
@@ -443,10 +441,8 @@ target: coherence_ratio > 1.2
 - Overlap: 15%
 - Strategy: Section-aware, entity-centric
 
-**Retrieval:**
-- Primary: RAG (factual queries work well)
-- Secondary: GraphRAG (entity relationships)
-- Hybrid: Metadata-enhanced RAG
+**Graph Query/Analysis:**
+- Entity consistency + reverse relation handling kritik
 
 **Entity Extraction:**
 - Schema: Person, Date, Location, Organization
@@ -459,10 +455,8 @@ target: coherence_ratio > 1.2
 - Overlap: 10%
 - Strategy: Code-aware, table-aware
 
-**Retrieval:**
-- Primary: Hybrid (vector + keyword)
-- Secondary: GraphRAG (API dependencies)
-- Re-ranking: Cross-encoder
+**Graph Query/Analysis:**
+- Şema kapsamı + normalizasyon + entity resolution kritik; embedding opsiyonel yardımcı
 
 **Entity Extraction:**
 - Schema: Function, Class, API, TechnicalTerm
@@ -475,10 +469,8 @@ target: coherence_ratio > 1.2
 - Overlap: 15%
 - Strategy: Turn-aware, speaker-attribution
 
-**Retrieval:**
-- Primary: Metadata-enhanced RAG
-- Secondary: GraphRAG (user relationships)
-- Filtering: Speaker, topic, timestamp
+**Graph Query/Analysis:**
+- Konuşmacı/turn metadata’sı + coreference çözümü kritik
 
 **Entity Extraction:**
 - Schema: User, Topic, Message

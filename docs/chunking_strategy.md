@@ -2,7 +2,7 @@
 
 ## 1. Genel Bakış
 
-Chunking stratejisi, dataset-agnostic semantic pipeline'ın temel bileşenidir. Amacı, herhangi bir metin kaynağını, semantic retrieval ve knowledge graph extraction için optimize edilmiş parçalara bölmektir.
+Chunking stratejisi, dataset-agnostic semantic pipeline'ın temel bileşenidir. Amacı, herhangi bir metin kaynağını **knowledge graph extraction** için güvenli ve tekrarlanabilir şekilde parçalara bölmektir.
 
 ## 2. Token Window Stratejisi
 
@@ -10,7 +10,7 @@ Chunking stratejisi, dataset-agnostic semantic pipeline'ın temel bileşenidir. 
 
 **Gerekçe:**
 
-- **512 tokens**: Minimum context window, fine-grained retrieval için uygun
+- **512 tokens**: Daha küçük bağlam penceresi, ince-granular ilişki/varlık çıkarımı için uygun
 - **1024 tokens**: Maksimum context window, daha geniş semantic context sağlar
 - **768 tokens**: Varsayılan değer, 512 ve 1024 arasında dengeli bir seçim
 

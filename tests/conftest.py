@@ -3,6 +3,7 @@ Pytest configuration and shared fixtures for DRG tests.
 
 This module provides fixtures and configuration that are shared across all tests.
 """
+import os
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 from typing import List, Tuple
@@ -145,9 +146,34 @@ def mock_embedding_provider():
 @pytest.fixture(autouse=True)
 def disable_lm_config(monkeypatch):
     """Automatically disable LM configuration in tests to avoid API calls."""
+    if os.getenv("DRG_RUN_INTEGRATION", "").lower() in {"1", "true", "yes"}:
+        # Integration tests may require real LM configuration.
+        return
+
     def mock_configure_lm():
         pass
     
     monkeypatch.setattr('drg.extract._configure_llm_auto', mock_configure_lm)
     monkeypatch.setattr('drg.config.configure_lm', mock_configure_lm)
+
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line(
+        "markers",
+        "integration: marks tests as integration (disabled by default; set DRG_RUN_INTEGRATION=1 to enable)",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip integration tests unless explicitly enabled."""
+    if os.getenv("DRG_RUN_INTEGRATION", "").lower() in {"1", "true", "yes"}:
+        return
+
+    skip_integration = pytest.mark.skip(
+        reason="Integration tests disabled by default. Set DRG_RUN_INTEGRATION=1 to enable."
+    )
+    for item in items:
+        if "integration" in item.keywords:
+            item.add_marker(skip_integration)
 

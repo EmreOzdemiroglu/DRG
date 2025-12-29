@@ -2,349 +2,244 @@
   "entity_types": [
     {
       "name": "Person",
-      "description": "An individual human being",
+      "description": "An individual in the story.",
       "examples": [
         "Dr. Elena Vasquez",
         "Dr. Marcus Chen",
-        "Dr. Sarah Mitchell",
-        "James Morrison",
         "Alex Rivera"
       ],
       "properties": {
-        "name": "Name of the person",
-        "expertise": "Area of expertise or skills",
-        "affiliation": "Organization or group the person is associated with"
+        "name": "string",
+        "role": "string",
+        "affiliation": "string"
       }
     },
     {
       "name": "Organization",
-      "description": "A group of people working together for a common purpose",
+      "description": "A group or institution.",
       "examples": [
         "Institute of Cognitive Enhancement",
         "Global Security Council",
-        "TechnoCorp Alliance",
-        "Resistance Network",
-        "Free Neural Network Foundation"
+        "Resistance Network"
       ],
       "properties": {
-        "name": "Name of the organization",
-        "type": "Type of organization (e.g., research, government, corporate)",
-        "location": "Location of the organization's headquarters or main operations",
-        "mission": "The organization's primary goal or purpose"
+        "name": "string",
+        "type": "string",
+        "location": "string"
       }
     },
     {
       "name": "Technology",
-      "description": "A tool, technique, or system used to solve a problem or achieve a goal",
+      "description": "A specific technology or system.",
       "examples": [
         "Neural Link Protocol",
         "Nanites",
-        "Quantum Computing",
-        "Consciousness Mapping",
-        "Counter-Protocol",
-        "Advanced Prosthetics",
-        "Augmented Reality Systems",
-        "Autonomous Transportation Networks"
+        "Counter-Protocol"
       ],
       "properties": {
-        "name": "Name of the technology",
-        "description": "Brief explanation of what the technology does",
-        "developer": "Person or organization that developed the technology",
-        "purpose": "The intended use of the technology",
-        "status": "Current state of the technology (e.g., development, deployment)"
+        "name": "string",
+        "description": "string",
+        "function": "string"
       }
     },
     {
       "name": "Location",
-      "description": "A physical place or area",
+      "description": "A place in the story.",
       "examples": [
         "Neo-Paris",
         "Old Paris",
-        "Underground Laboratory",
-        "Council Headquarters",
-        "Quantum Consciousness Lab"
+        "underground laboratory"
       ],
       "properties": {
-        "name": "Name of the location",
-        "type": "Type of location (e.g., city, building, facility)",
-        "description": "Brief description of the location",
-        "coordinates": "Geographical coordinates (if available)"
+        "name": "string",
+        "type": "string",
+        "description": "string"
       }
     },
     {
-      "name": "Concept",
-      "description": "An abstract idea or principle",
+      "name": "AI",
+      "description": "An artificial intelligence entity.",
       "examples": [
-        "Human Autonomy",
-        "Ethical Responsibility",
-        "Cognitive Enhancement",
-        "Surveillance",
-        "Freedom",
-        "AI Collaboration",
-        "Quantum Mechanics",
-        "Consciousness"
+        "ARIES"
       ],
       "properties": {
-        "name": "Name of the concept",
-        "description": "Explanation of the concept",
-        "related_concepts": "Other related concepts",
-        "importance": "Significance of the concept in the context of the story"
+        "name": "string",
+        "function": "string",
+        "knowledge": "string"
       }
     }
   ],
   "relation_groups": [
     {
-      "name": "development",
-      "description": "Relations describing the creation and evolution of technologies and concepts",
+      "name": "WorksAt",
+      "description": "A person works at an organization.",
       "relations": [
         {
-          "name": "Developed_By",
+          "name": "works_at",
+          "source": "Person",
+          "target": "Organization",
+          "description": "The person is employed or affiliated with the organization.",
+          "detail": "Employment or affiliation"
+        },
+        {
+          "name": "employs",
+          "source": "Organization",
+          "target": "Person",
+          "description": "Reverse of works_at: The person is employed or affiliated with the organization.",
+          "detail": "Reverse relationship: Employment or affiliation"
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "Develops",
+      "description": "A person or organization develops a technology.",
+      "relations": [
+        {
+          "name": "develops",
+          "source": "Person",
+          "target": "Technology",
+          "description": "The person or organization creates or improves the technology.",
+          "detail": "Creation or improvement"
+        },
+        {
+          "name": "developed_by",
           "source": "Technology",
           "target": "Person",
-          "description": "Indicates who created or developed a specific technology",
-          "detail": "The person was responsible for the design, creation, or significant improvement of the technology."
-        },
-        {
-          "name": "Developed_At",
-          "source": "Technology",
-          "target": "Organization",
-          "description": "Indicates the organization where a technology was developed",
-          "detail": "The organization provided the resources, facilities, or support necessary for the technology's development."
-        },
-        {
-          "name": "Based_On",
-          "source": "Technology",
-          "target": "Concept",
-          "description": "Indicates the underlying principle or idea that a technology is built upon",
-          "detail": "The technology's design or function is directly derived from or inspired by the concept."
-        },
-        {
-          "name": "Evolved_From",
-          "source": "Technology",
-          "target": "Technology",
-          "description": "Indicates that one technology is a later version or improvement of another",
-          "detail": "The newer technology incorporates elements of the older technology but with significant enhancements or modifications."
-        },
-        {
-          "name": "Refined_By",
-          "source": "Technology",
-          "target": "Person",
-          "description": "Indicates who improved or perfected a technology",
-          "detail": "The person made significant improvements to the technology's functionality, safety, or efficiency."
+          "description": "Reverse of develops: The person or organization creates or improves the technology.",
+          "detail": "Reverse relationship: Creation or improvement"
         }
       ],
       "examples": []
     },
     {
-      "name": "usage",
-      "description": "Relations describing how technologies are used and their effects",
+      "name": "LocatedIn",
+      "description": "An organization or technology is located in a place.",
       "relations": [
         {
-          "name": "Uses",
-          "source": "Organization",
-          "target": "Technology",
-          "description": "Indicates that an organization utilizes a specific technology",
-          "detail": "The organization employs the technology in its operations, research, or services."
-        },
-        {
-          "name": "Used_By",
-          "source": "Technology",
-          "target": "Person",
-          "description": "Indicates that a person uses a specific technology",
-          "detail": "The person employs the technology in their work, personal life, or research."
-        },
-        {
-          "name": "Enables",
-          "source": "Technology",
-          "target": "Concept",
-          "description": "Indicates that a technology makes a concept possible or easier to achieve",
-          "detail": "The technology's capabilities directly contribute to the realization or advancement of the concept."
-        },
-        {
-          "name": "Integrates_With",
-          "source": "Technology",
-          "target": "Technology",
-          "description": "Indicates that two technologies work together or are combined into a single system",
-          "detail": "The technologies are designed to function as a unified whole, enhancing each other's capabilities."
-        },
-        {
-          "name": "Deployed_At",
-          "source": "Technology",
-          "target": "Location",
-          "description": "Indicates the location where a technology is implemented or used",
-          "detail": "The technology is physically present and operational at the specified location."
-        }
-      ],
-      "examples": []
-    },
-    {
-      "name": "affiliation",
-      "description": "Relations describing the connections between people and organizations",
-      "relations": [
-        {
-          "name": "Works_At",
-          "source": "Person",
-          "target": "Organization",
-          "description": "Indicates that a person is employed by or affiliated with an organization",
-          "detail": "The person has a formal working relationship with the organization."
-        },
-        {
-          "name": "Leads",
-          "source": "Person",
-          "target": "Organization",
-          "description": "Indicates that a person is the leader or head of an organization",
-          "detail": "The person has the authority to make decisions and guide the organization's direction."
-        },
-        {
-          "name": "Member_Of",
-          "source": "Person",
-          "target": "Organization",
-          "description": "Indicates that a person is a member of an organization",
-          "detail": "The person is part of the organization and adheres to its rules and principles."
-        },
-        {
-          "name": "Founded",
-          "source": "Person",
-          "target": "Organization",
-          "description": "Indicates that a person established or created an organization",
-          "detail": "The person played a key role in the organization's formation and initial development."
-        },
-        {
-          "name": "Monitored_By",
-          "source": "Person",
-          "target": "Organization",
-          "description": "Indicates that a person's activities are being observed or tracked by an organization",
-          "detail": "The organization is gathering information about the person's actions, communications, or whereabouts."
-        }
-      ],
-      "examples": []
-    },
-    {
-      "name": "ethical",
-      "description": "Relations describing the ethical implications and considerations of technologies",
-      "relations": [
-        {
-          "name": "Ensures",
-          "source": "Organization",
-          "target": "Concept",
-          "description": "Indicates that an organization is working to guarantee or protect a specific concept",
-          "detail": "The organization's actions and policies are designed to uphold the concept."
-        },
-        {
-          "name": "Threatens",
-          "source": "Technology",
-          "target": "Concept",
-          "description": "Indicates that a technology poses a risk to a specific concept",
-          "detail": "The technology's capabilities or potential misuse could undermine the concept."
-        },
-        {
-          "name": "Promotes",
-          "source": "Technology",
-          "target": "Concept",
-          "description": "Indicates that a technology helps to advance or support a specific concept",
-          "detail": "The technology's capabilities directly contribute to the realization or strengthening of the concept."
-        },
-        {
-          "name": "Fights_Against",
-          "source": "Organization",
-          "target": "Concept",
-          "description": "Indicates that an organization is actively opposing a specific concept",
-          "detail": "The organization's actions and policies are designed to counteract the concept."
-        },
-        {
-          "name": "Requires",
-          "source": "Technology",
-          "target": "Concept",
-          "description": "Indicates that a technology needs a specific concept to function properly or ethically",
-          "detail": "The technology's operation depends on the presence or adherence to the concept."
-        }
-      ],
-      "examples": []
-    },
-    {
-      "name": "spatial",
-      "description": "Relations describing the location and physical relationships between entities",
-      "relations": [
-        {
-          "name": "Located_In",
+          "name": "located_in",
           "source": "Organization",
           "target": "Location",
-          "description": "Indicates the location where an organization is based or operates",
-          "detail": "The organization's headquarters or main facilities are situated in the specified location."
+          "description": "The organization or technology is situated in the location.",
+          "detail": "Location of entity"
         },
         {
-          "name": "Operates_In",
-          "source": "Organization",
+          "name": "located_in",
+          "source": "Technology",
           "target": "Location",
-          "description": "Indicates the location where an organization conducts its activities",
-          "detail": "The organization's services, research, or production take place in the specified location."
+          "description": "The technology is situated in the location.",
+          "detail": "Location of entity"
         },
         {
-          "name": "Houses",
+          "name": "contains",
           "source": "Location",
           "target": "Organization",
-          "description": "Indicates that a location contains or is the site of an organization",
-          "detail": "The organization's facilities or offices are located within the specified location."
-        },
-        {
-          "name": "Near",
-          "source": "Location",
-          "target": "Location",
-          "description": "Indicates that two locations are in close proximity to each other",
-          "detail": "The locations are within a short distance of each other."
-        },
-        {
-          "name": "Relocated_To",
-          "source": "Person",
-          "target": "Location",
-          "description": "Indicates that a person moved to a specific location",
-          "detail": "The person changed their place of residence or work to the specified location."
+          "description": "Reverse of located_in: The organization or technology is situated in the location.",
+          "detail": "Reverse relationship: Location of entity"
         }
       ],
       "examples": []
     },
     {
-      "name": "conceptual",
-      "description": "Relations describing the relationships between abstract ideas and concepts",
+      "name": "Monitors",
+      "description": "An organization monitors a person or technology.",
       "relations": [
         {
-          "name": "Represents",
-          "source": "Concept",
-          "target": "Concept",
-          "description": "Indicates that one concept symbolizes or embodies another concept",
-          "detail": "The first concept is a manifestation or expression of the second concept."
+          "name": "monitors",
+          "source": "Organization",
+          "target": "Person",
+          "description": "The organization observes or tracks the person.",
+          "detail": "Observation or tracking"
         },
         {
-          "name": "Related_To",
-          "source": "Concept",
-          "target": "Concept",
-          "description": "Indicates that two concepts are connected or associated with each other",
-          "detail": "The concepts share common themes, characteristics, or implications."
+          "name": "monitors",
+          "source": "Organization",
+          "target": "Technology",
+          "description": "The organization observes or tracks the technology.",
+          "detail": "Observation or tracking"
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "PartnersWith",
+      "description": "Two persons or organizations are partners.",
+      "relations": [
+        {
+          "name": "partners_with",
+          "source": "Person",
+          "target": "AI",
+          "description": "The person collaborates with the AI.",
+          "detail": "Collaboration"
         },
         {
-          "name": "Contradicts",
-          "source": "Concept",
-          "target": "Concept",
-          "description": "Indicates that two concepts are in opposition or conflict with each other",
-          "detail": "The concepts are mutually exclusive or incompatible."
+          "name": "partners_with",
+          "source": "Person",
+          "target": "Person",
+          "description": "The person collaborates with another person.",
+          "detail": "Collaboration"
         },
         {
-          "name": "Enhances",
-          "source": "Concept",
-          "target": "Concept",
-          "description": "Indicates that one concept improves or strengthens another concept",
-          "detail": "The first concept contributes to the advancement or realization of the second concept."
+          "name": "partners_with",
+          "source": "AI",
+          "target": "Person",
+          "description": "Reverse of partners_with: The person collaborates with the AI.",
+          "detail": "Reverse relationship: Collaboration"
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "MemberOf",
+      "description": "A person is a member of an organization.",
+      "relations": [
+        {
+          "name": "member_of",
+          "source": "Person",
+          "target": "Organization",
+          "description": "The person is part of the organization.",
+          "detail": "Membership"
         },
         {
-          "name": "Impacts",
-          "source": "Technology",
-          "target": "Concept",
-          "description": "Indicates that a technology has a significant effect on a concept",
-          "detail": "The technology's use or development influences the understanding or application of the concept."
+          "name": "has_member",
+          "source": "Organization",
+          "target": "Person",
+          "description": "Reverse of member_of: The person is part of the organization.",
+          "detail": "Reverse relationship: Membership"
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "Uses",
+      "description": "An organization uses a technology.",
+      "relations": [
+        {
+          "name": "uses",
+          "source": "Organization",
+          "target": "Technology",
+          "description": "The organization employs the technology.",
+          "detail": "Employment"
+        }
+      ],
+      "examples": []
+    },
+    {
+      "name": "FightsAgainst",
+      "description": "An organization fights against another organization.",
+      "relations": [
+        {
+          "name": "fights_against",
+          "source": "Organization",
+          "target": "Organization",
+          "description": "The organization opposes the other organization.",
+          "detail": "Opposition"
         }
       ],
       "examples": []
     }
   ],
-  "auto_discovery": true
+  "entity_groups": [],
+  "property_groups": [],
+  "auto_discovery": false
 }

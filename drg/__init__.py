@@ -95,24 +95,8 @@ def __getattr__(name: str):
         "OpenRouterEmbeddingProvider": ".embedding",
         "LocalEmbeddingProvider": ".embedding",
         "create_embedding_provider": ".embedding",
-        # Vector Store module
-        "VectorStore": ".vector_store",
-        "SearchResult": ".vector_store",
-        "ChromaVectorStore": ".vector_store",
-        "create_vector_store": ".vector_store",
-        "QdrantVectorStore": ".vector_store",
-        "PineconeVectorStore": ".vector_store",
-        "FAISSVectorStore": ".vector_store",
-        # Retrieval module
-        "RAGRetriever": ".retrieval",
-        "create_rag_retriever": ".retrieval",
-        "RetrievalContext": ".retrieval",
-        "DRGSearch": ".retrieval",
-        "create_drg_search": ".retrieval",
-        "HybridRetriever": ".retrieval",
-        "GraphRAGRetriever": ".retrieval",
-        "create_graphrag_retriever": ".retrieval",
-        "GraphRAGRetrievalContext": ".retrieval",
+        # NOTE: This project is not a RAG/retrieval framework. Public API intentionally does not
+        # export retrieval/search helpers; focus is KG extraction + analysis utilities.
         # Clustering module
         "ClusteringAlgorithm": ".clustering",
         "LouvainClustering": ".clustering",

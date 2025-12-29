@@ -40,7 +40,7 @@ export DRG_MODEL="openai/gpt-4o-mini"
 
 ```bash
 # En basit örnek (API key olmadan da çalışır)
-python examples/graphrag_pipeline_example.py example1
+python examples/full_pipeline_example.py 1example
 
 # Veya otomatik script
 ./quick_start.sh
@@ -50,22 +50,22 @@ python examples/graphrag_pipeline_example.py example1
 
 #### Senaryo 1: API Key Olmadan Test
 ```bash
-python examples/graphrag_pipeline_example.py example1
+python examples/full_pipeline_example.py 1example
 # Mock data ile schema ve KG yapısını test eder
 ```
 
 #### Senaryo 2: API Key ile Gerçek Extraction
 ```bash
 export GEMINI_API_KEY="your-key"
-python examples/graphrag_pipeline_example.py example1
+python examples/full_pipeline_example.py 1example
 # Gerçek LLM extraction yapar
 ```
 
 #### Senaryo 3: Tam Pipeline
 ```bash
 export GEMINI_API_KEY="your-key"
-python examples/graphrag_pipeline_example.py example1
-# Chunking + Embedding + RAG + KG extraction
+python examples/full_pipeline_example.py 1example
+# Chunking + Embedding + KG extraction (+ clustering/raporlar)
 ```
 
 ### 📋 Kontrol Listesi
@@ -106,7 +106,7 @@ pip install -e .
 
 Tüm örnekler `examples/` klasöründe:
 
-- `graphrag_pipeline_example.py` - Ana GraphRAG pipeline
+- `full_pipeline_example.py` - Ana pipeline örneği
 - `optimizer_demo.py` - Optimizer ile iyileştirme
 - `mcp_demo.py` - MCP API örneği
 

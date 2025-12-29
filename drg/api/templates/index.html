@@ -439,6 +439,9 @@
             html += `<p><strong>From:</strong> ${source}</p>`;
             html += `<p><strong>To:</strong> ${target}</p>`;
             
+            if (edge.data('relationship_description')) {
+                html += `<p style="margin-top: 12px;"><strong>Description:</strong><br/>${edge.data('relationship_description')}</p>`;
+            }
             if (edge.data('relationship_detail')) {
                 html += `<p style="margin-top: 12px;"><strong>Detail:</strong><br/>${edge.data('relationship_detail')}</p>`;
             }
