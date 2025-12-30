@@ -38,3 +38,12 @@ coverage.xml
 *.swp
 *.swo
 *~
+# Environment files with API keys
+.env*
+*.env
+.env.save
+.env.example
+# Scripts that might contain API keys
+*_api_server.sh
+start_*.sh
+restart_*.sh

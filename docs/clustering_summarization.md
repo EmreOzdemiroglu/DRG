@@ -26,7 +26,7 @@ Chunks → KG Nodes → Graph Construction → Clustering → Cluster Summarizat
 
 - **Entity Nodes**: Extracted entity'ler
 - **Chunk Nodes** (optional): Chunk'ları da node olarak ekle
-- **Not**: Chunk node yaklaşımı opsiyoneldir; “serving/arama katmanı” anlamına gelmez.
+- **Hybrid**: Entity + chunk hybrid graph
 
 **Edge Representation:**
 
@@ -238,7 +238,7 @@ Description:
 - Less natural
 - Limited flexibility
 
-### 4.4 Çok Aşamalı Özetleme (Multi-Stage)
+### 4.4 Hybrid Summarization
 
 **Strategy:**
 

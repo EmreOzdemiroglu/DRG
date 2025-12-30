@@ -226,7 +226,7 @@ drg_skeleton/
 │   ├── graph.py         # Knowledge Graph sınıfı
 │   └── cli.py           # Komut satırı arayüzü
 ├── examples/
-│   ├── full_pipeline_example.py      # Ana pipeline örneği (chunking + extraction + KG + raporlar)
+│   ├── graphrag_pipeline_example.py  # Ana GraphRAG pipeline örneği
 │   ├── mcp_demo.py                   # MCP API demo
 │   └── optimizer_demo.py             # Optimizer demo
 ├── tests/
@@ -243,14 +243,14 @@ drg_skeleton/
 pytest tests/
 
 # API key olmadan sadece yapı testleri
-python examples/full_pipeline_example.py 1example
+python examples/graphrag_pipeline_example.py example1
 ```
 
 ## 💡 Örnekler
 
 Detaylı örnekler için `examples/` dizinindeki dosyalara bakın:
 
-- `full_pipeline_example.py`: Tam pipeline (chunking, schema generation, KG extraction, embedding, clustering, raporlar)
+- `graphrag_pipeline_example.py`: Tam GraphRAG pipeline (chunking, KG extraction, embedding, retrieval)
 - `mcp_demo.py`: MCP API interface demo
 - `optimizer_demo.py`: DSPy optimizer demo
 

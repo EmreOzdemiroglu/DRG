@@ -7,7 +7,7 @@ from pathlib import Path
 
 from drg.chunking import ChunkingStrategy, Chunk
 from drg.embedding import EmbeddingProvider
-# RAG retriever removed - not part of this project
+from drg.retrieval import RAGRetriever
 from drg.graph import KG
 
 logger = logging.getLogger(__name__)
@@ -43,15 +43,18 @@ class MultiDatasetEvaluator:
         self,
         chunker: ChunkingStrategy,
         embedding_provider: EmbeddingProvider,
+        rag_retriever: RAGRetriever,
     ):
         """Initialize evaluator.
         
         Args:
             chunker: Chunking strategy
             embedding_provider: Embedding provider
+            rag_retriever: RAG retriever
         """
         self.chunker = chunker
         self.embedding_provider = embedding_provider
+        self.rag_retriever = rag_retriever
     
     def evaluate_dataset(
         self,
@@ -89,9 +92,10 @@ class MultiDatasetEvaluator:
         total_entities = len(ground_truth_entities) if ground_truth_entities else 0
         total_relations = 0  # Would be extracted from KG
         
-        # Retrieval accuracy - disabled (RAG retriever removed, not our focus)
+        # Retrieval accuracy (if test queries provided)
         retrieval_accuracy = {}
-        # RAG retrieval evaluation removed - we don't build RAG framework
+        if test_queries:
+            retrieval_accuracy = self._evaluate_retrieval_accuracy(test_queries, chunks)
         
         # Entity extraction effectiveness
         entity_extraction = {}
@@ -160,12 +164,46 @@ class MultiDatasetEvaluator:
         test_queries: List[Dict[str, Any]],
         chunks: List[Chunk],
     ) -> Dict[str, float]:
-        """Evaluate retrieval accuracy - disabled (RAG retriever removed).
+        """Evaluate retrieval accuracy.
         
-        This method is kept for API compatibility but always returns empty dict.
-        We don't build RAG framework, so retrieval accuracy evaluation is not our focus.
+        Args:
+            test_queries: List of test queries with expected results
+            chunks: List of chunks
+        
+        Returns:
+            Dictionary of accuracy metrics
         """
-        return {}
+        if not test_queries:
+            return {}
+        
+        precision_scores = []
+        recall_scores = []
+        
+        for query_data in test_queries:
+            query = query_data.get("query", "")
+            expected_chunk_ids = set(query_data.get("expected_chunks", []))
+            k = query_data.get("k", 10)
+            
+            # Retrieve
+            context = self.rag_retriever.retrieve(query=query, k=k)
+            retrieved_chunk_ids = {chunk["chunk_id"] for chunk in context.chunks}
+            
+            # Calculate precision and recall
+            if retrieved_chunk_ids:
+                precision = len(expected_chunk_ids & retrieved_chunk_ids) / len(retrieved_chunk_ids)
+                precision_scores.append(precision)
+            
+            if expected_chunk_ids:
+                recall = len(expected_chunk_ids & retrieved_chunk_ids) / len(expected_chunk_ids)
+                recall_scores.append(recall)
+        
+        metrics = {}
+        if precision_scores:
+            metrics["precision_at_k"] = sum(precision_scores) / len(precision_scores)
+        if recall_scores:
+            metrics["recall_at_k"] = sum(recall_scores) / len(recall_scores)
+        
+        return metrics
     
     def _evaluate_entity_extraction(
         self,

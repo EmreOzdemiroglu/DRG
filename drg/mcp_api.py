@@ -239,7 +239,7 @@ class DRGMCPAPI:
                             "kg_id": {"type": "string", "description": "ID of the knowledge graph"},
                             "format": {
                                 "type": "string",
-                                "enum": ["json", "jsonld", "enriched"],
+                                "enum": ["json", "jsonld", "graphrag"],
                                 "description": "Export format",
                             },
                         },
@@ -374,17 +374,10 @@ class DRGMCPAPI:
         }
 
     def _build_kg(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Build a knowledge graph from entities and triples.
-        
-        Supports enriched metadata including temporal information (start_time, end_time),
-        confidence scores, and negation flags. Domain-agnostic - works for any domain.
-        """
-        from .extract import create_kgedge_from_triple
-        
+        """Build a knowledge graph from entities and triples."""
         kg_id = params.get("kg_id")
         entities_data = params.get("entities", [])
         triples_data = params.get("triples", [])
-        enriched_metadata = params.get("enriched_metadata", [])  # Optional: list of dicts with temporal, confidence, negation
         
         if not kg_id:
             raise ValueError("kg_id is required")
@@ -400,17 +393,20 @@ class DRGMCPAPI:
         for entity_name, entity_type in entities:
             kg.add_node(KGNode(id=entity_name, type=entity_type))
         
-        # Add edges with enriched metadata (temporal, confidence, negation)
-        for i, (source, relation, target) in enumerate(triples):
-            # Get enriched metadata for this triple if available
-            enriched_dict = None
-            if enriched_metadata and i < len(enriched_metadata):
-                enriched_dict = enriched_metadata[i]
+        # Add edges
+        for source, relation, target in triples:
+            # Try to convert relation to RelationshipType enum
+            try:
+                rel_type = RelationshipType(relation)
+            except ValueError:
+                # If not in enum, use RELATED_TO as default
+                rel_type = RelationshipType.RELATED_TO
             
-            # Use helper function to create KGEdge with temporal information
-            edge = create_kgedge_from_triple(
-                (source, relation, target),
-                enriched_metadata=enriched_dict
+            edge = KGEdge(
+                source=source,
+                target=target,
+                relationship_type=rel_type,
+                relationship_detail=f"{source} {relation} {target}",
             )
             kg.add_edge(edge)
         
@@ -454,8 +450,8 @@ class DRGMCPAPI:
         elif format_type == "jsonld":
             jsonld_str = kg.to_json_ld()
             return {"format": "jsonld", "data": json.loads(jsonld_str)}
-        elif format_type == "enriched":
-            return {"format": "enriched", "data": kg.to_enriched_format()}
+        elif format_type == "graphrag":
+            return {"format": "graphrag", "data": kg.to_graphrag()}
         else:
             raise ValueError(f"Unsupported format: {format_type}")
 

@@ -5,7 +5,7 @@ This module provides a comprehensive KG core with:
 - Entities (nodes) with type, properties, metadata
 - Relationships (edges) with enriched relationship model
 - Clusters/Communities support (algorithm-agnostic)
-- Multiple export formats (JSON, JSON-LD, enriched format)
+- Multiple export formats (JSON, JSON-LD, GraphRAG)
 """
 
 from typing import List, Dict, Any, Optional, Set
@@ -26,7 +26,7 @@ class KGNode:
         type: Entity type (e.g., "Person", "Location", "Event")
         properties: Optional dictionary of entity properties
         metadata: Optional metadata (confidence, source_ref, etc.)
-        embedding: Optional embedding vector for semantic similarity
+        embedding: Optional embedding vector for semantic similarity (GraphRAG)
     """
     id: str
     type: Optional[str] = None
@@ -71,20 +71,12 @@ class KGEdge:
     Knowledge Graph Edge (Relationship).
     
     Uses EnrichedRelationship structure.
-    Supports temporal information and confidence scores.
     """
     source: str
     target: str
     relationship_type: str
     relationship_detail: str
     metadata: Dict[str, Any] = field(default_factory=dict)
-    # Temporal information
-    start_time: Optional[str] = None  # ISO format date/time when relationship started
-    end_time: Optional[str] = None  # ISO format date/time when relationship ended
-    # Confidence score (0.0-1.0)
-    confidence: Optional[float] = None  # Confidence score from extraction (0.0-1.0)
-    # Negation flag
-    is_negated: bool = False  # Whether the relationship is negated (e.g., "no longer produces")
     
     def __post_init__(self):
         """Validate edge data."""
@@ -94,27 +86,16 @@ class KGEdge:
             raise ValueError("Edge relationship_type and detail cannot be empty")
         if self.source == self.target:
             raise ValueError("Edge source and target cannot be the same")
-        if self.confidence is not None and not (0.0 <= self.confidence <= 1.0):
-            raise ValueError("Confidence score must be between 0.0 and 1.0")
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
-        result = {
+        return {
             "source": self.source,
             "target": self.target,
             "relationship_type": self.relationship_type,
             "relationship_detail": self.relationship_detail,
             "metadata": self.metadata,
         }
-        if self.start_time:
-            result["start_time"] = self.start_time
-        if self.end_time:
-            result["end_time"] = self.end_time
-        if self.confidence is not None:
-            result["confidence"] = self.confidence
-        if self.is_negated:
-            result["is_negated"] = True
-        return result
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "KGEdge":
@@ -125,38 +106,16 @@ class KGEdge:
             relationship_type=data["relationship_type"],
             relationship_detail=data["relationship_detail"],
             metadata=data.get("metadata", {}),
-            start_time=data.get("start_time"),
-            end_time=data.get("end_time"),
-            confidence=data.get("confidence"),
-            is_negated=data.get("is_negated", False),
         )
     
     @classmethod
     def from_enriched_relationship(cls, rel: EnrichedRelationship) -> "KGEdge":
-        """Create KGEdge from EnrichedRelationship.
-        
-        Preserves temporal information, confidence, and negation from enriched relationship.
-        Domain-agnostic: Works for any domain (technology, business, science, medicine, etc.).
-        """
+        """Create KGEdge from EnrichedRelationship."""
         metadata = {}
         if rel.confidence is not None:
             metadata["confidence"] = rel.confidence
         if rel.source_ref:
             metadata["source_ref"] = rel.source_ref
-        
-        # Extract temporal information if available in metadata
-        start_time = None
-        end_time = None
-        if hasattr(rel, 'metadata') and isinstance(rel.metadata, dict):
-            temporal = rel.metadata.get('temporal')
-            if isinstance(temporal, dict):
-                start_time = temporal.get('start')
-                end_time = temporal.get('end')
-            # Also check direct fields (backward compatibility)
-            if not start_time:
-                start_time = rel.metadata.get('start_time')
-            if not end_time:
-                end_time = rel.metadata.get('end_time')
         
         return cls(
             source=rel.source,
@@ -164,10 +123,6 @@ class KGEdge:
             relationship_type=rel.relationship_type.value,
             relationship_detail=rel.relationship_detail,
             metadata=metadata,
-            start_time=start_time,
-            end_time=end_time,
-            confidence=rel.confidence,
-            is_negated=getattr(rel, 'is_negated', False),
         )
 
 
@@ -273,10 +228,6 @@ class EnhancedKG:
             "target": {"@id": f"kg:node/{edge.target}"},
             "relationship_type": edge.relationship_type,
             "relationship_detail": edge.relationship_detail,
-            **({"start_time": edge.start_time} if edge.start_time else {}),
-            **({"end_time": edge.end_time} if edge.end_time else {}),
-            **({"confidence": edge.confidence} if edge.confidence is not None else {}),
-            **({"is_negated": True} if edge.is_negated else {}),
             **{f"kg:meta/{k}": v for k, v in edge.metadata.items()},
         } for edge in self.edges]
         
@@ -291,8 +242,8 @@ class EnhancedKG:
         data = {**context, "nodes": nodes, "edges": edges, "clusters": clusters}
         return json.dumps(data, indent=indent, ensure_ascii=False)
     
-    def to_enriched_format(self, indent: int = 2) -> str:
-        """Export to enriched format (entities, relationships, communities)."""
+    def to_graphrag_format(self, indent: int = 2) -> str:
+        """Export to GraphRAG-compatible format."""
         nodes = [node.to_dict() for node in self.nodes.values()]
         
         edges = []
@@ -303,17 +254,8 @@ class EnhancedKG:
                 "relationship_type": edge.relationship_type,
                 "relationship_detail": edge.relationship_detail,
             }
-            if edge.start_time:
-                edge_dict["start_time"] = edge.start_time
-            if edge.end_time:
-                edge_dict["end_time"] = edge.end_time
-            if edge.confidence is not None:
-                edge_dict["confidence"] = edge.confidence
-            elif "confidence" in edge.metadata:
-                # Backward compatibility: confidence stored in metadata
+            if "confidence" in edge.metadata:
                 edge_dict["confidence"] = edge.metadata["confidence"]
-            if edge.is_negated:
-                edge_dict["is_negated"] = True
             if "source_ref" in edge.metadata:
                 edge_dict["source_ref"] = edge.metadata["source_ref"]
             edges.append(edge_dict)
@@ -340,11 +282,11 @@ class EnhancedKG:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(self.to_json_ld(indent=indent), encoding="utf-8")
     
-    def save_enriched_format(self, filepath: str, indent: int = 2) -> None:
-        """Save to enriched format file (entities, relationships, communities)."""
+    def save_graphrag(self, filepath: str, indent: int = 2) -> None:
+        """Save to GraphRAG format file."""
         path = Path(filepath)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(self.to_enriched_format(indent=indent), encoding="utf-8")
+        path.write_text(self.to_graphrag_format(indent=indent), encoding="utf-8")
     
     @classmethod
     def from_enriched_relationships(
@@ -366,7 +308,7 @@ class EnhancedKG:
         embedding_provider,
         entity_texts: Optional[Dict[str, str]] = None,
     ) -> None:
-        """Add embeddings to all nodes in the KG.
+        """Add embeddings to all nodes in the KG (GraphRAG requirement).
         
         Args:
             embedding_provider: Embedding provider to use

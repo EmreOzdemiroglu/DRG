@@ -3,15 +3,10 @@
 import argparse
 import sys
 from pathlib import Path
-import re
-import json
 
 from .schema import Entity, Relation, DRGSchema, load_schema_from_json
-from .extract import extract_typed, extract_from_chunks, generate_schema_from_text
+from .extract import extract_typed
 from .graph import KG
-from .graph.builders import build_enhanced_kg
-from .chunking import create_chunker
-from .utils.env_loader import load_dotenv
 
 
 def create_default_schema():
@@ -23,9 +18,6 @@ def create_default_schema():
 
 
 def main():
-    # Load local .env if present (keeps API keys out of code)
-    load_dotenv(".env", override=False)
-
     parser = argparse.ArgumentParser(
         description="DRG - Declarative Relationship Generation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -54,29 +46,6 @@ Examples:
         "--schema",
         type=str,
         help="Custom schema JSON file (optional, uses default Company->Product if not provided)"
-    )
-
-    parser.add_argument(
-        "--auto-schema",
-        action="store_true",
-        help="Generate an EnhancedDRGSchema from the input text (recommended for richer, input-agnostic extraction). "
-             "If provided, --schema is ignored."
-    )
-
-    parser.add_argument(
-        "--output-format",
-        type=str,
-        default=None,
-        choices=["legacy", "enhancedkg"],
-        help="Output format. 'legacy' matches CLI JSON (nodes/edges with edge key 'type'). "
-             "'enhancedkg' writes EnhancedKG JSON (nodes/edges/clusters) for the UI. "
-             "If omitted, inferred from output filename: '*_kg.json' -> enhancedkg else legacy."
-    )
-
-    parser.add_argument(
-        "--no-hub-validation",
-        action="store_true",
-        help="Disable hub-dominance validation gate (some documents are naturally hub-like)."
     )
     
     parser.add_argument(
@@ -119,10 +88,8 @@ Examples:
             sys.exit(1)
         text = input_path.read_text(encoding="utf-8")
     
-    # Load/generate schema
-    if args.auto_schema:
-        schema = None  # lazy generate after model/env is set
-    elif args.schema:
+    # Load schema
+    if args.schema:
         try:
             schema = load_schema_from_json(args.schema)
         except FileNotFoundError as e:
@@ -141,8 +108,6 @@ Examples:
     
     # Set environment variables for automatic LLM configuration (DSPy otomatik okur)
     import os
-    if args.no_hub_validation:
-        os.environ["DRG_VALIDATE_HUB_DOMINANCE"] = "0"
     if args.model:
         os.environ["DRG_MODEL"] = args.model
     if args.api_key:
@@ -155,8 +120,6 @@ Examples:
             os.environ["GOOGLE_API_KEY"] = args.api_key
         elif "anthropic" in model.lower() or "claude" in model.lower():
             os.environ["ANTHROPIC_API_KEY"] = args.api_key
-        elif "openrouter" in model.lower():
-            os.environ["OPENROUTER_API_KEY"] = args.api_key
         else:
             os.environ["OPENAI_API_KEY"] = args.api_key
     if args.base_url:
@@ -171,76 +134,26 @@ Examples:
         print("Warning: No API key found. Cloud models require an API key.", file=sys.stderr)
         print("For local models, use: --model ollama_chat/llama3 --base-url http://localhost:11434", file=sys.stderr)
     
+<<<<<<< HEAD
     # Determine output format
     inferred_format = None
     if args.output != "-" and args.output.lower().endswith("_kg.json"):
         inferred_format = "enhancedkg"
     output_format = args.output_format or inferred_format or "legacy"
     
+=======
+>>>>>>> a4118681b584e40e8595d2d058b94dc61682c5ce
     # Extract
     try:
-        # Generate schema (after env is set so LLM config can use the chosen model)
-        if args.auto_schema:
-            # Auto-schema typically needs a larger output budget to avoid truncation.
-            # Keep this opt-in behind --auto-schema so default CLI stays cheap/safe.
-            if not os.getenv("DRG_MAX_TOKENS"):
-                os.environ["DRG_MAX_TOKENS"] = "4096"
-            schema = generate_schema_from_text(text)
-
-        # If schema is auto-generated (Enhanced) we use chunk-aware extraction for richer relations.
-        if args.auto_schema:
-            chunk_size = int(os.getenv("DRG_CHUNK_SIZE", "768"))
-            overlap_ratio = float(os.getenv("DRG_OVERLAP_RATIO", "0.15"))
-            strategy = os.getenv("DRG_CHUNKING_STRATEGY", "token_based")
-            chunker = create_chunker(strategy=strategy, chunk_size=chunk_size, overlap_ratio=overlap_ratio)
-            chunks = chunker.chunk(text, origin_dataset="cli", origin_file=args.input)
-            entities_typed, triples = extract_from_chunks(
-                chunks=[{"text": c.text, "chunk_id": c.chunk_id, "metadata": c.metadata} for c in chunks],
-                schema=schema,
-                enable_cross_chunk_relationships=True,
-                enable_entity_resolution=True,
-                enable_coreference_resolution=True,
-                two_pass_extraction=True,
-            )
-        else:
-            entities_typed, triples = extract_typed(text, schema)
-
+        entities_typed, triples = extract_typed(text, schema)
         # Remove duplicates
         triples = list(dict.fromkeys(triples))
-
-        if output_format == "enhancedkg":
-            kg2 = build_enhanced_kg(
-                entities_typed=entities_typed,
-                triples=triples,
-                schema=schema,
-                source_text=text,
-            )
-            output_json = kg2.to_json()
-        else:
-            kg = KG.from_typed(entities_typed, triples)
-            output_json = kg.to_json()
+        kg = KG.from_typed(entities_typed, triples)
+        output_json = kg.to_json()
     except Exception as e:
-        # Avoid leaking secrets (API keys can appear in URLs like ...?key=... in provider errors).
+        print(f"Error during extraction: {e}", file=sys.stderr)
         import traceback
-        raw_msg = f"{type(e).__name__}: {e}"
-        raw_tb = traceback.format_exc()
-
-        def _redact_secrets(s: str) -> str:
-            if not s:
-                return s
-            # Redact URL query keys: key=XXXX
-            s = re.sub(r"(?i)(key=)[^&\s]+", r"\1REDACTED", s)
-            # Redact common Google API key shape if present
-            s = re.sub(r"AIzaSy[0-9A-Za-z_-]{20,}", "REDACTED_GOOGLE_API_KEY", s)
-            # Redact OpenRouter key shape if present
-            s = re.sub(r"sk-or-v1-[0-9a-fA-F]{20,}", "REDACTED_OPENROUTER_KEY", s)
-            return s
-
-        print(f"Error during extraction: {_redact_secrets(raw_msg)}", file=sys.stderr)
-        # Print full traceback only when explicitly requested
-        import os
-        if os.getenv("DRG_DEBUG", "").lower() in {"1", "true", "yes"}:
-            print(_redact_secrets(raw_tb), file=sys.stderr)
+        traceback.print_exc()
         sys.exit(1)
     
     # Write output
@@ -252,20 +165,6 @@ Examples:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(output_json, encoding="utf-8")
         print(f"Knowledge graph written to: {output_path}", file=sys.stderr)
-
-        # If schema was auto-generated, also persist it next to the output for UI/debugging.
-        if args.auto_schema:
-            try:
-                schema_stem = output_path.stem.replace("_kg", "")
-                schema_path = output_path.parent / f"{schema_stem}_schema.json"
-                schema_path.write_text(
-                    json.dumps(schema.to_dict(), indent=2, ensure_ascii=False),
-                    encoding="utf-8",
-                )
-                print(f"Schema written to: {schema_path}", file=sys.stderr)
-            except Exception:
-                # Best-effort: schema saving should not fail the main extraction path.
-                pass
 
 
 if __name__ == "__main__":

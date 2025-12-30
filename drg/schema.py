@@ -213,169 +213,6 @@ class EnhancedDRGSchema:
         relations = self.get_all_relations()
         return DRGSchema(entities=entities, relations=relations)
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert EnhancedDRGSchema to dictionary format (for JSON serialization)."""
-        return {
-            "entity_types": [
-                {
-                    "name": et.name,
-                    "description": et.description,
-                    "examples": et.examples,
-                    "properties": et.properties
-                }
-                for et in self.entity_types
-            ],
-            "relation_groups": [
-                {
-                    "name": rg.name,
-                    "description": rg.description,
-                    "relations": [
-                        {
-                            "name": r.name,
-                            "source": r.src,
-                            "target": r.dst,
-                            "description": r.description,
-                            "detail": r.detail
-                        }
-                        for r in rg.relations
-                    ],
-                    "examples": rg.examples
-                }
-                for rg in self.relation_groups
-            ],
-            "entity_groups": [
-                {
-                    "name": eg.name,
-                    "description": eg.description,
-                    "entity_types": eg.get_entity_type_names(),
-                    "examples": eg.examples
-                }
-                for eg in self.entity_groups
-            ] if self.entity_groups else [],
-            "property_groups": [
-                {
-                    "name": pg.name,
-                    "description": pg.description,
-                    "properties": pg.properties,
-                    "examples": pg.examples
-                }
-                for pg in self.property_groups
-            ] if self.property_groups else [],
-            "auto_discovery": self.auto_discovery
-        }
-    
-    @classmethod
-    def from_dict(cls, schema_data: Dict[str, Any]) -> "EnhancedDRGSchema":
-        """Load EnhancedDRGSchema from a dictionary (JSON-compatible).
-        
-        Accepts both canonical keys and common aliases:
-        - relation endpoints may be provided as source/target or src/dst
-        """
-        if not isinstance(schema_data, dict):
-            raise ValueError(f"Schema must be a dict, got {type(schema_data).__name__}")
-        
-        raw_entity_types = schema_data.get("entity_types", [])
-        if not isinstance(raw_entity_types, list) or not raw_entity_types:
-            raise ValueError("EnhancedDRGSchema requires non-empty 'entity_types' list")
-        
-        entity_types: List[EntityType] = []
-        for et in raw_entity_types:
-            if not isinstance(et, dict):
-                continue
-            name = et.get("name")
-            if not isinstance(name, str) or not name.strip():
-                continue
-            description = et.get("description", "")
-            if not isinstance(description, str) or not description.strip():
-                # EntityType enforces non-empty description
-                description = "Auto-generated entity type"
-            examples = et.get("examples", [])
-            if not isinstance(examples, list):
-                examples = []
-            properties = et.get("properties", {})
-            if not isinstance(properties, dict):
-                properties = {}
-            entity_types.append(
-                EntityType(
-                    name=name.strip(),
-                    description=description.strip(),
-                    examples=[str(x) for x in examples][:20],
-                    properties=properties,
-                )
-            )
-        
-        if not entity_types:
-            raise ValueError("EnhancedDRGSchema parsing produced empty entity_types")
-        
-        raw_relation_groups = schema_data.get("relation_groups", [])
-        if not isinstance(raw_relation_groups, list) or not raw_relation_groups:
-            raise ValueError("EnhancedDRGSchema requires non-empty 'relation_groups' list")
-        
-        relation_groups: List[RelationGroup] = []
-        for rg in raw_relation_groups:
-            if not isinstance(rg, dict):
-                continue
-            rg_name = rg.get("name")
-            if not isinstance(rg_name, str) or not rg_name.strip():
-                continue
-            rg_desc = rg.get("description", "")
-            if not isinstance(rg_desc, str) or not rg_desc.strip():
-                rg_desc = "Auto-generated relation group"
-            
-            raw_relations = rg.get("relations", [])
-            if not isinstance(raw_relations, list) or not raw_relations:
-                continue
-            
-            relations: List[Relation] = []
-            for r in raw_relations:
-                if not isinstance(r, dict):
-                    continue
-                rel_name = r.get("name") or r.get("relation")
-                src = r.get("source") or r.get("src")
-                dst = r.get("target") or r.get("dst")
-                if not rel_name or not src or not dst:
-                    continue
-                rel_desc = r.get("description", "")
-                rel_detail = r.get("detail", "")
-                if not isinstance(rel_desc, str):
-                    rel_desc = ""
-                if not isinstance(rel_detail, str):
-                    rel_detail = ""
-                relations.append(
-                    Relation(
-                        name=str(rel_name).strip(),
-                        src=str(src).strip(),
-                        dst=str(dst).strip(),
-                        description=rel_desc,
-                        detail=rel_detail,
-                    )
-                )
-            
-            if not relations:
-                continue
-            
-            examples = rg.get("examples", [])
-            if not isinstance(examples, list):
-                examples = []
-            
-            relation_groups.append(
-                RelationGroup(
-                    name=rg_name.strip(),
-                    description=rg_desc.strip(),
-                    relations=relations,
-                    examples=examples,
-                )
-            )
-        
-        if not relation_groups:
-            raise ValueError("EnhancedDRGSchema parsing produced empty relation_groups")
-        
-        return cls(
-            entity_types=entity_types,
-            relation_groups=relation_groups,
-            auto_discovery=bool(schema_data.get("auto_discovery", False)),
-        )
-    
     def get_schema_summary(self) -> Dict[str, Any]:
         """Get a summary of the schema for display/debugging."""
         return {
@@ -444,7 +281,40 @@ def load_schema_from_json(schema_path: Union[str, Path]) -> Union[DRGSchema, Enh
     
     # Enhanced schema formatını kontrol et
     if "entity_types" in schema_data:
-        return EnhancedDRGSchema.from_dict(schema_data)
+        entity_types = [
+            EntityType(
+                name=et["name"],
+                description=et.get("description", ""),
+                examples=et.get("examples", []),
+                properties=et.get("properties", {})
+            )
+            for et in schema_data.get("entity_types", [])
+        ]
+        
+        relation_groups = []
+        for rg_data in schema_data.get("relation_groups", []):
+            relations = [
+                Relation(
+                    name=r["name"],
+                    src=r.get("source", r.get("src", "")),
+                    dst=r.get("target", r.get("dst", "")),
+                    description=r.get("description", ""),
+                    detail=r.get("detail", "")
+                )
+                for r in rg_data.get("relations", [])
+            ]
+            relation_groups.append(RelationGroup(
+                name=rg_data["name"],
+                description=rg_data.get("description", ""),
+                relations=relations,
+                examples=rg_data.get("examples", [])
+            ))
+        
+        return EnhancedDRGSchema(
+            entity_types=entity_types,
+            relation_groups=relation_groups,
+            auto_discovery=schema_data.get("auto_discovery", False)
+        )
     else:
         # Legacy format
         entities = [Entity(e["name"]) for e in schema_data.get("entities", [])]

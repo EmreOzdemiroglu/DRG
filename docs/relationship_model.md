@@ -2,7 +2,7 @@
 
 ## Genel Bakış
 
-İlişki modelleme sistemi, knowledge graph içindeki ilişkiler için zenginleştirilmiş bir temsil sağlar. Kapsamlı bir ilişki tipi taksonomisi, sınıflandırma mekanizmaları ve yapılandırılmış ilişki detaylarını içerir.
+İlişki modelleme sistemi, GraphRAG formatıyla uyumlu zenginleştirilmiş ilişki temsili sağlar. Kapsamlı bir ilişki tipi taksonomisi, sınıflandırma mekanizmaları ve yapılandırılmış ilişki detaylarını içerir.
 
 ## İlişki Yapısı
 
@@ -16,7 +16,17 @@ Her ilişki şu yapıyı takip eder:
 - **confidence**: Güven skoru (0.0 ile 1.0 arası)
 - **source_ref**: Kaynak referansı (örn. chunk_id, document_id)
 
-**Not**: Dokümantasyon dosyalarında kod/JSON örneği tutulmaz; bu formatı uygulamada `enriched` export olarak görürsünüz.
+**Örnek:**
+```json
+{
+  "source": "Alice",
+  "target": "Bob",
+  "relationship_type": "influences",
+  "relationship_detail": "Alice, Bob'un karar verme sürecini stratejik tavsiyeleriyle etkiler.",
+  "confidence": 0.85,
+  "source_ref": "chunk_001"
+}
+```
 
 ### İlişki Detayı
 

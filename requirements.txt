@@ -6,7 +6,7 @@
 #   pip install drg[api]           # For API server
 #   pip install drg[all]           # For all optional dependencies
 
-dspy>=2.5.0,<3.0.0
+dspy>=2.4.0,<3.0.0
 pydantic>=2.0.0
 
 # Note: litellm is NOT required here - DSPy handles LLM providers internally

@@ -135,29 +135,14 @@ class DRGOptimizer:
         trainset = self._prepare_trainset()
         
         # Optimize using DSPy optimizer
-        # DSPy 2.4+ uses compile() method for all optimizers (BootstrapFewShot, MIPRO, COPRO, etc.)
-        # BootstrapFewShot is a teleprompter that wraps the module during forward pass
+        # DSPy optimizer'lar compile() metodu ile optimize eder
+        # BootstrapFewShot, MIPRO, COPRO hepsi compile() kullanır
         try:
-            # All DSPy optimizers (including BootstrapFewShot) use compile() method
-            if hasattr(optimizer, 'compile'):
-                self.optimized_extractor = optimizer.compile(
-                    student=self.base_extractor,
-                    trainset=trainset,
-                    metric=metric,
-                )
-            # Fallback for older DSPy versions or custom optimizers
-            elif hasattr(optimizer, 'optimize'):
-                self.optimized_extractor = optimizer.optimize(
-                    student=self.base_extractor,
-                    trainset=trainset,
-                    metric=metric,
-                )
-            else:
-                # Final fallback: BootstrapFewShot can be called directly (teleprompter pattern)
-                # This wraps the module during forward pass, but compile() is preferred
-                logger.warning("Optimizer doesn't have compile() or optimize() method, using module directly")
-                self.optimized_extractor = self.base_extractor
-            
+            self.optimized_extractor = optimizer.compile(
+                student=self.base_extractor,
+                trainset=trainset,
+                metric=metric,
+            )
             logger.info("Optimization completed successfully")
         except Exception as e:
             logger.error(f"Optimization failed: {e}")
@@ -213,8 +198,8 @@ class DRGOptimizer:
     def _prepare_trainset(self) -> List[dspy.Example]:
         """Prepare training set for DSPy.
         
-        Important: The trainset format must match the output format of KGExtractor(...).
-        The extractor returns a prediction-like object with 'entities' and 'relations' attributes,
+        Important: The trainset format must match the output format of KGExtractor.forward().
+        KGExtractor.forward() returns a dspy.Prediction with 'entities' and 'relations' fields,
         where both are lists of tuples. This matches the expected format from training examples.
         """
         trainset = []
@@ -233,7 +218,7 @@ class DRGOptimizer:
     def _default_metric(
         self,
         example: dspy.Example,
-        pred: Any,
+        pred: dspy.Prediction,
         trace: Optional[Any] = None,
     ) -> float:
         """Default evaluation metric.

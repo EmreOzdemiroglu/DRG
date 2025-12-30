@@ -36,9 +36,13 @@ from ..graph import (
     ProvenanceNode,
     ProvenanceEdge,
 )
+<<<<<<< HEAD
 # GraphRAG removed - not part of this project
 from ..graph.query_engine import execute_query as execute_deterministic_query
 from ..graph.auto_clusters import ensure_clusters
+=======
+from ..retrieval.graphrag import GraphRAGRetriever, GraphRAGRetrievalContext
+>>>>>>> a4118681b584e40e8595d2d058b94dc61682c5ce
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +67,7 @@ class QueryResponse(BaseModel):
 def create_app(
     kg: Optional[EnhancedKG] = None,
     neo4j_config: Optional[Neo4jConfig] = None,
+    graphrag_retriever: Optional[GraphRAGRetriever] = None,
     provenance_store: Optional[Dict[str, ProvenanceGraph]] = None,
 ) -> FastAPI:
     """Create FastAPI application.
@@ -70,6 +75,7 @@ def create_app(
     Args:
         kg: EnhancedKG instance
         neo4j_config: Optional Neo4j configuration for persistence
+        graphrag_retriever: Optional GraphRAG retriever for queries
         provenance_store: Optional in-memory provenance store
     
     Returns:
@@ -98,6 +104,7 @@ def create_app(
     # Store app state
     app.state.kg = kg
     app.state.neo4j_config = neo4j_config
+    app.state.graphrag_retriever = graphrag_retriever
     app.state.provenance_store = provenance_store or {}
     app.state.visualization_adapter = VisualizationAdapter(kg) if kg else None
     
@@ -261,6 +268,7 @@ def create_app(
     
     @app.post("/api/query")
     async def execute_query(request: QueryRequest):
+<<<<<<< HEAD
         """Execute query (deterministic KG lookup; NO RAG/LLM).
         
         This endpoint exists to power the UI query box without turning DRG into a retrieval framework.
@@ -338,6 +346,57 @@ def create_app(
             provenance_id=prov_id,
             retrieval_context=retrieval_context,
         )
+=======
+        """Execute query and get provenance chain."""
+        retriever = app.state.graphrag_retriever
+        if retriever is None:
+            raise HTTPException(
+                status_code=404,
+                detail="GraphRAG retriever not configured. Please set OPENROUTER_API_KEY environment variable."
+            )
+        
+        try:
+            # Execute retrieval
+            retrieval_context = retriever.retrieve(
+                query=request.query,
+                k_entities=request.k_entities,
+                k_reports=request.k_reports,
+                k_context_chunks=request.k_context_chunks,
+            )
+            
+            # Generate provenance graph (simplified - in production, would use LLM to generate answer)
+            provenance = _create_provenance_from_retrieval(request.query, retrieval_context)
+            
+            # Store provenance
+            provenance_id = f"provenance_{len(app.state.provenance_store)}"
+            app.state.provenance_store[provenance_id] = provenance
+            
+            return {
+                "query": request.query,
+                "answer": provenance.answer,
+                "provenance_id": provenance_id,
+                "retrieval_context": {
+                    "seed_entities": retrieval_context.seed_entities,
+                    "entities": retrieval_context.entities,
+                    "relationships": retrieval_context.relationships,
+                    "community_reports": retrieval_context.community_reports,
+                },
+            }
+        except Exception as e:
+            import traceback
+            error_detail = str(e)
+            error_traceback = traceback.format_exc()
+            # Log to console (visible in terminal)
+            print(f"\n❌ QUERY ERROR: {error_detail}", file=sys.stderr)
+            print(f"Traceback:\n{error_traceback}", file=sys.stderr)
+            logger.error(f"Query execution failed: {error_detail}", exc_info=True)
+            logger.error(f"Traceback: {error_traceback}")
+            # Return detailed error for debugging
+            raise HTTPException(
+                status_code=500,
+                detail=f"Query failed: {error_detail}"
+            )
+>>>>>>> a4118681b584e40e8595d2d058b94dc61682c5ce
     
     @app.get("/api/provenance/{provenance_id}")
     async def get_provenance(
@@ -441,7 +500,152 @@ def create_app(
     return app
 
 
-# GraphRAG removed - _create_provenance_from_retrieval function no longer available
+def _create_provenance_from_retrieval(
+    query: str,
+    retrieval_context: GraphRAGRetrievalContext,
+) -> ProvenanceGraph:
+    """Create provenance graph from retrieval context.
+    
+    Creates provenance chain: query → chunks → community → summary → answer
+    """
+    from ..graph.visualization_adapter import ProvenanceNode, ProvenanceEdge
+    
+    nodes = []
+    edges = []
+    
+    # Query node
+    query_node = ProvenanceNode(
+        id="query",
+        type="query",
+        label=f"Query: {query[:50]}",
+        data={"query": query},
+    )
+    nodes.append(query_node)
+    
+    # Chunk nodes
+    chunk_nodes = []
+    context_chunks = getattr(retrieval_context, 'context_chunks', None) or []
+    if context_chunks:
+        for idx, chunk in enumerate(context_chunks[:5]):  # Limit to 5 chunks
+            chunk_id = f"chunk_{idx}"
+            chunk_node = ProvenanceNode(
+                id=chunk_id,
+                type="chunk",
+                label=f"Chunk {idx+1}",
+                data={
+                    "chunk_id": chunk.get("chunk_id"),
+                    "text": chunk.get("text", "")[:100],
+                    "score": chunk.get("score"),
+                },
+                metadata=chunk.get("metadata", {}),
+            )
+            nodes.append(chunk_node)
+            chunk_nodes.append(chunk_id)
+            
+            # Edge from query to chunk
+            edges.append(ProvenanceEdge(
+                source="query",
+                target=chunk_id,
+                type="retrieved_from",
+                label="retrieved",
+                weight=chunk.get("score", 1.0),
+            ))
+    
+    # Community nodes
+    community_nodes = []
+    community_reports = getattr(retrieval_context, 'community_reports', None) or []
+    for idx, report in enumerate(community_reports[:5]):  # Limit to 5 communities
+        community_id = f"community_{report.get('cluster_id', idx)}"
+        community_node = ProvenanceNode(
+            id=community_id,
+            type="community",
+            label=f"Community {idx+1}",
+            data={
+                "cluster_id": report.get("cluster_id"),
+                "summary": report.get("summary", "")[:100],
+            },
+            metadata=report.get("metadata", {}),
+        )
+        nodes.append(community_node)
+        community_nodes.append(community_id)
+        
+        # Edge from query to community (via seed entities)
+        edges.append(ProvenanceEdge(
+            source="query",
+            target=community_id,
+            type="matched_community",
+            label="matched",
+            weight=1.0,
+        ))
+        
+        # Summary node
+        summary_id = f"summary_{idx}"
+        summary_node = ProvenanceNode(
+            id=summary_id,
+            type="summary",
+            label=f"Summary {idx+1}",
+            data={
+                "summary": report.get("summary", "")[:200],
+                "themes": report.get("themes", []),
+            },
+            metadata=report.get("metadata", {}),
+        )
+        nodes.append(summary_node)
+        
+        # Edge from community to summary
+        edges.append(ProvenanceEdge(
+            source=community_id,
+            target=summary_id,
+            type="summarized_in",
+            label="summarized",
+            weight=1.0,
+        ))
+        
+        # Edge from summary to answer
+        if idx == 0:  # Connect first summary to answer
+            answer_id = "answer"
+            answer_node = ProvenanceNode(
+                id=answer_id,
+                type="answer",
+                label="Answer",
+                data={
+                    "answer": f"Based on {len(community_reports)} communities and {len(getattr(retrieval_context, 'seed_entities', []))} entities",
+                },
+            )
+            nodes.append(answer_node)
+            
+            edges.append(ProvenanceEdge(
+                source=summary_id,
+                target=answer_id,
+                type="generated_from",
+                label="generated",
+                weight=1.0,
+            ))
+    
+    # Generate answer text
+    answer_text = f"Query: {query}\n\n"
+    seed_entities = getattr(retrieval_context, 'seed_entities', [])
+    answer_text += f"Found {len(seed_entities)} relevant entities in "
+    answer_text += f"{len(community_reports)} communities.\n\n"
+    
+    if community_reports:
+        answer_text += "Community summaries:\n"
+        for report in community_reports[:3]:
+            answer_text += f"- {report.get('summary', '')}\n"
+    
+    provenance = ProvenanceGraph(
+        nodes=nodes,
+        edges=edges,
+        query=query,
+        answer=answer_text,
+        metadata={
+            "seed_entities": seed_entities,
+            "entity_count": len(getattr(retrieval_context, 'entities', [])),
+            "relationship_count": len(getattr(retrieval_context, 'relationships', [])),
+        },
+    )
+    
+    return provenance
 
 
 class DRGAPIServer:
@@ -451,18 +655,22 @@ class DRGAPIServer:
         self,
         kg: Optional[EnhancedKG] = None,
         neo4j_config: Optional[Neo4jConfig] = None,
+        graphrag_retriever: Optional[GraphRAGRetriever] = None,
     ):
         """Initialize API server.
         
         Args:
             kg: EnhancedKG instance
             neo4j_config: Optional Neo4j configuration
+            graphrag_retriever: Optional GraphRAG retriever
         """
         self.kg = kg
         self.neo4j_config = neo4j_config
+        self.graphrag_retriever = graphrag_retriever
         self.app = create_app(
             kg=kg,
             neo4j_config=neo4j_config,
+            graphrag_retriever=graphrag_retriever,
         )
     
     def run(self, host: str = "0.0.0.0", port: int = 8000, reload: bool = False):

@@ -10,13 +10,13 @@
 
 **Gemini kullanarak:**
 ```bash
-export GEMINI_API_KEY="your-gemini-api-key"
+export GEMINI_API_KEY="your-gemini-api-key-here"
 python examples/api_server_example.py
 ```
 
 **OpenAI kullanarak (alternatif):**
 ```bash
-export OPENAI_API_KEY="sk-or-v1-..."
+export OPENAI_API_KEY="your-openai-api-key-here"
 python examples/api_server_example.py
 ```
 
@@ -92,7 +92,8 @@ python examples/api_server_example.py
 
 ### Query Endpoints
 
-> Not: Bu repo “query/retrieval serving” hedeflemediği için query endpoint'leri devre dışıdır (KG extraction + görselleştirme odaklı).
+- `POST /api/query` - Query çalıştır ve provenance chain al
+- `GET /api/provenance/{provenance_id}` - Query provenance chain'i getir
 
 ### Neo4j Endpoints (Opsiyonel)
 

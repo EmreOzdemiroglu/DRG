@@ -3,10 +3,10 @@ Knowledge Graph Module
 
 This module provides:
 - Schema generation (dataset-agnostic)
-- Relationship modeling (enriched format)
+- Relationship modeling (enriched, GraphRAG format)
 - Knowledge graph core (modular monolith)
 - Visualization (Mermaid, PyVis)
-- Community reports
+- Community reports (GraphRAG style)
 """
 
 # Legacy KG class (from graph.py)

@@ -53,10 +53,10 @@ export DRG_MODEL="openai/gpt-4o-mini"
 
 ```bash
 # En basit örnek (API key olmadan da çalışır)
-python examples/full_pipeline_example.py 1example
+python examples/graphrag_pipeline_example.py example1
 
 # Tam pipeline örneği (API key gerekli)
-python examples/full_pipeline_example.py 1example
+python examples/graphrag_pipeline_example.py example1
 
 # Optimizer örneği (API key gerekli)
 python examples/optimizer_demo.py
@@ -114,7 +114,7 @@ export DRG_MODEL="gemini/gemini-2.0-flash-exp"
 
 ```bash
 # Basit test
-python examples/full_pipeline_example.py 1example
+python examples/graphrag_pipeline_example.py example1
 
 # Çıktı kontrolü
 ls outputs/
@@ -164,7 +164,7 @@ pip install sentence-transformers
 ### Senaryo 1: API Key Olmadan Test
 
 ```bash
-python examples/full_pipeline_example.py 1example
+python examples/graphrag_pipeline_example.py example1
 # Mock data ile schema ve KG yapısını test eder
 ```
 
@@ -172,7 +172,7 @@ python examples/full_pipeline_example.py 1example
 
 ```bash
 export GEMINI_API_KEY="your-key"
-python examples/full_pipeline_example.py 1example
+python examples/graphrag_pipeline_example.py example1
 # Gerçek extraction yapar
 ```
 
@@ -180,8 +180,8 @@ python examples/full_pipeline_example.py 1example
 
 ```bash
 export GEMINI_API_KEY="your-key"
-python examples/full_pipeline_example.py 1example
-# Chunking + Embedding + KG extraction (+ clustering/raporlar)
+python examples/graphrag_pipeline_example.py example1
+# Chunking + Embedding + RAG + KG extraction
 ```
 
 ### Senaryo 4: Optimizer ile İyileştirme
@@ -206,7 +206,7 @@ python examples/mcp_demo.py
 - [ ] `pip install -e .` çalıştırıldı
 - [ ] `dspy` ve `litellm` kuruldu
 - [ ] API key ayarlandı (GEMINI_API_KEY veya OPENAI_API_KEY)
-- [ ] `python examples/full_pipeline_example.py 1example` çalıştı
+- [ ] `python examples/graphrag_pipeline_example.py example1` çalıştı
 
 ## 📚 Daha Fazla Bilgi
 
@@ -220,5 +220,5 @@ Sorun yaşarsanız:
 1. `python --version` ile Python versiyonunu kontrol edin
 2. `pip list | grep dspy` ile dspy kurulumunu kontrol edin
 3. API key'in doğru ayarlandığını kontrol edin
-4. `python examples/full_pipeline_example.py 1example` ile pipeline test yapın
+4. `examples/graphrag_pipeline_example.py example1` ile pipeline test yapın
 

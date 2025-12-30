@@ -525,6 +525,16 @@ CHUNKING_PRESETS = {
         "chunk_size": 1024,
         "overlap_ratio": 0.15,
     },
+    "graphrag": {
+        "strategy": "token_based",
+        "chunk_size": 200,
+        "overlap_ratio": 0.15,
+    },
+    "rag": {
+        "strategy": "token_based",
+        "chunk_size": 512,
+        "overlap_ratio": 0.20,
+    },
     "sentence": {
         "strategy": "sentence_based",
         "chunk_size": 512,
@@ -544,11 +554,11 @@ def create_chunker(
     """Factory function to create chunker - declarative interface.
     
     Can be used in two ways:
-    1. Preset-based (declarative): create_chunker(preset="small")
+    1. Preset-based (declarative): create_chunker(preset="graphrag")
     2. Parameter-based (low-level): create_chunker(strategy="token_based", chunk_size=200)
     
     Args:
-        preset: Chunking preset name ("small", "medium", "large", "xlarge", "sentence")
+        preset: Chunking preset name ("small", "medium", "large", "graphrag", "rag", "sentence")
                If preset is provided, it overrides strategy/chunk_size/overlap_ratio
         strategy: Chunking strategy ("token_based" or "sentence_based")
                  Only used if preset is not provided
@@ -564,7 +574,7 @@ def create_chunker(
     
     Examples:
         # Declarative (preset-based)
-        chunker = create_chunker(preset="small")
+        chunker = create_chunker(preset="graphrag")
         
         # Low-level (parameter-based)
         chunker = create_chunker(strategy="token_based", chunk_size=200, overlap_ratio=0.15)

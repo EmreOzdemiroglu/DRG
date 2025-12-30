@@ -8,7 +8,7 @@ license = "MIT"
 authors = [{name = "Your Name"}]
 dependencies = [
     # Core dependencies (always required)
-    "dspy>=2.5.0,<3.0.0",  # DSPy: Keep within 2.x API range; TypedPredictor requires 2.5+
+    "dspy>=2.4.0,<4.0.0",  # DSPy: Pin to stable version range (latest: 3.0.4 as of Nov 2025)
     # Note: TypedPredictor available in DSPy 2.5+, optimizers available in 2.4+
     "pydantic>=2.0.0",  # Data validation (used by DSPy TypedPredictor and schema models)
 ]
@@ -76,9 +76,7 @@ networkx = [
 # Coreference resolution (NLP)
 coreference = [
     "spacy>=3.7.0",
-    # Neural coreference (try coreferee first, fallback to neuralcoref)
-    "coreferee>=1.0.0",
-    # Note: neuralcoref is deprecated but still works as fallback
+    # Note: NeuralCoref is deprecated, using spaCy with basic heuristics
     # For advanced coreference, consider AllenNLP or HuggingFace transformers
 ]
 
