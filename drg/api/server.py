@@ -15,13 +15,15 @@ import logging
 import sys
 from typing import Dict, Any, Optional, List
 from pathlib import Path
+import uuid
+
+from pydantic import BaseModel
 
 try:
     from fastapi import FastAPI, HTTPException, Query
     from fastapi.responses import HTMLResponse, JSONResponse
     from fastapi.staticfiles import StaticFiles
     from fastapi.middleware.cors import CORSMiddleware
-    from pydantic import BaseModel
 except ImportError:
     FastAPI = None
 
@@ -31,8 +33,12 @@ from ..graph import (
     Neo4jConfig,
     VisualizationAdapter,
     ProvenanceGraph,
+    ProvenanceNode,
+    ProvenanceEdge,
 )
 # GraphRAG removed - not part of this project
+from ..graph.query_engine import execute_query as execute_deterministic_query
+from ..graph.auto_clusters import ensure_clusters
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +135,9 @@ def create_app(
         kg = app.state.kg
         if kg is None:
             raise HTTPException(status_code=404, detail="Knowledge graph not loaded")
+
+        # Communities view expects clusters; generate deterministic clusters if missing
+        ensure_clusters(kg)
         
         # Calculate statistics
         node_types = {}
@@ -155,6 +164,9 @@ def create_app(
         kg = app.state.kg
         if kg is None:
             raise HTTPException(status_code=404, detail="Knowledge graph not loaded")
+
+        # UI expects communities to exist; generate deterministic clusters if missing.
+        ensure_clusters(kg)
         
         return {
             "clusters": [cluster.to_dict() for cluster in kg.clusters.values()],
@@ -166,6 +178,8 @@ def create_app(
         kg = app.state.kg
         if kg is None:
             raise HTTPException(status_code=404, detail="Knowledge graph not loaded")
+
+        ensure_clusters(kg)
         
         cluster = kg.clusters.get(cluster_id)
         if cluster is None:
@@ -180,7 +194,11 @@ def create_app(
         return report.to_dict()
     
     @app.get("/api/visualization/{format}")
-    async def get_visualization(format: str):
+    async def get_visualization(
+        format: str,
+        hub_split: Optional[int] = Query(None, description="1 to enable UI hub splitting, 0 to disable"),
+        hub_split_threshold: Optional[int] = Query(None, description="Degree threshold for hub splitting"),
+    ):
         """Get graph visualization data in specified format."""
         kg = app.state.kg
         adapter = app.state.visualization_adapter
@@ -191,7 +209,11 @@ def create_app(
         format_lower = format.lower()
         
         if format_lower == "cytoscape":
-            data = adapter.kg_to_cytoscape(kg)
+            data = adapter.kg_to_cytoscape(
+                kg,
+                hub_split=(bool(hub_split) if hub_split is not None else None),
+                hub_split_threshold=hub_split_threshold,
+            )
             return {"elements": data}
         
         elif format_lower == "vis-network" or format_lower == "visnetwork":
@@ -209,18 +231,28 @@ def create_app(
             )
     
     @app.get("/api/visualization/communities/{format}")
-    async def get_communities_visualization(format: str):
+    async def get_communities_visualization(
+        format: str,
+        hub_split: Optional[int] = Query(None, description="1 to enable UI hub splitting, 0 to disable"),
+        hub_split_threshold: Optional[int] = Query(None, description="Degree threshold for hub splitting"),
+    ):
         """Get communities visualization with color coding."""
         kg = app.state.kg
         adapter = app.state.visualization_adapter
         
         if kg is None or adapter is None:
             raise HTTPException(status_code=404, detail="Knowledge graph not loaded")
+
+        ensure_clusters(kg)
         
         format_lower = format.lower()
         
         if format_lower == "cytoscape":
-            data = adapter.communities_to_cytoscape(kg)
+            data = adapter.communities_to_cytoscape(
+                kg,
+                hub_split=(bool(hub_split) if hub_split is not None else None),
+                hub_split_threshold=hub_split_threshold,
+            )
             return {"elements": data}
         
         else:
@@ -229,10 +261,82 @@ def create_app(
     
     @app.post("/api/query")
     async def execute_query(request: QueryRequest):
-        """Execute query - GraphRAG removed, endpoint disabled."""
-        raise HTTPException(
-            status_code=501,
-            detail="Query endpoint not available. GraphRAG retrieval has been removed from this project."
+        """Execute query (deterministic KG lookup; NO RAG/LLM).
+        
+        This endpoint exists to power the UI query box without turning DRG into a retrieval framework.
+        It performs:
+        - entity string matching
+        - optional relation filtering (e.g., "(works_at)" or "rel:develops")
+        - neighborhood expansion around seed entities
+        """
+        kg = app.state.kg
+        if kg is None:
+            raise HTTPException(status_code=404, detail="Knowledge graph not loaded")
+
+        q = (request.query or "").strip()
+        if not q:
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+
+        # Deterministic graph query
+        result = execute_deterministic_query(
+            kg=kg,
+            query=q,
+            k_entities=request.k_entities,
+            k_edges=max(20, request.k_entities * 6),
+        )
+
+        # Build a minimal provenance graph (optional, but keeps API contract stable)
+        prov_id = str(uuid.uuid4())
+        prov_nodes: List[ProvenanceNode] = [
+            ProvenanceNode(id=f"query:{prov_id}", type="query", label="Query", data={"query": q}),
+            ProvenanceNode(id=f"answer:{prov_id}", type="answer", label="Answer", data={"answer": result.answer}),
+        ]
+        prov_edges: List[ProvenanceEdge] = [
+            ProvenanceEdge(
+                source=f"query:{prov_id}",
+                target=f"answer:{prov_id}",
+                type="generated_from",
+                label="deterministic_lookup",
+                weight=1.0,
+            )
+        ]
+        for ent in result.seed_entities[:20]:
+            prov_nodes.append(ProvenanceNode(id=f"entity:{ent}", type="entity", label=ent, data={"id": ent}))
+            prov_edges.append(
+                ProvenanceEdge(
+                    source=f"query:{prov_id}",
+                    target=f"entity:{ent}",
+                    type="retrieved_from",
+                    label="entity_match",
+                    weight=1.0,
+                )
+            )
+
+        provenance = ProvenanceGraph(
+            nodes=prov_nodes,
+            edges=prov_edges,
+            query=q,
+            answer=result.answer,
+            metadata={
+                "engine": "deterministic",
+                "seed_entities": result.seed_entities,
+            },
+        )
+        app.state.provenance_store[prov_id] = provenance
+
+        # UI expects: retrieval_context.seed_entities, and optionally .entities / .community_reports
+        retrieval_context: Dict[str, Any] = {
+            "seed_entities": result.seed_entities,
+            "entities": result.matched_entities,
+            "community_reports": [],
+            "matched_edges": result.matched_edges,
+        }
+
+        return QueryResponse(
+            query=q,
+            answer=result.answer,
+            provenance_id=prov_id,
+            retrieval_context=retrieval_context,
         )
     
     @app.get("/api/provenance/{provenance_id}")

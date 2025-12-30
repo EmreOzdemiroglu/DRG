@@ -149,7 +149,10 @@ Examples:
         # Set appropriate API key env var based on model
         model = args.model or os.getenv("DRG_MODEL", "openai/gpt-4o-mini")
         if "gemini" in model.lower():
+            # Different SDK/adapters use different env var names for Gemini.
+            # Keep both to be robust (LiteLLM commonly reads GOOGLE_API_KEY).
             os.environ["GEMINI_API_KEY"] = args.api_key
+            os.environ["GOOGLE_API_KEY"] = args.api_key
         elif "anthropic" in model.lower() or "claude" in model.lower():
             os.environ["ANTHROPIC_API_KEY"] = args.api_key
         elif "openrouter" in model.lower():
@@ -173,7 +176,7 @@ Examples:
     if args.output != "-" and args.output.lower().endswith("_kg.json"):
         inferred_format = "enhancedkg"
     output_format = args.output_format or inferred_format or "legacy"
-
+    
     # Extract
     try:
         # Generate schema (after env is set so LLM config can use the chosen model)

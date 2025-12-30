@@ -4,7 +4,7 @@ version = "0.1.0a0"
 description = "Declarative Relationship Generation (DRG)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "Your Name"}]
 dependencies = [
     # Core dependencies (always required)
@@ -108,6 +108,19 @@ dev = [
 
 [project.scripts]
 drg = "drg.cli:main"
+
+[tool.setuptools]
+# IMPORTANT: This repo is a flat-layout that also contains non-package top-level
+# folders like `inputs/` and `outputs/`. Without explicit configuration,
+# setuptools' automatic discovery can mistakenly treat them as packages and fail
+# editable installs with:
+# "Multiple top-level packages discovered in a flat-layout: ['drg', 'inputs', 'outputs']"
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["drg*"]
+exclude = ["inputs*", "outputs*", "docs*", "examples*", "tests*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

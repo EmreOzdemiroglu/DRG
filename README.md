@@ -4,6 +4,17 @@ DRG, metinlerden bilgi grafiği (knowledge graph) çıkarımı yapmak için decl
 
 > **⚠️ Note:** This is an alpha version (0.1.0a0). The project is actively under development and may have breaking changes. Use with caution in production environments.
 
+## Project Overview (Detaylı)
+
+Projeyi hiç bilmeyen biri için **detaylı genel overview**:
+- `docs/project_overview.md`
+
+Bu doküman özellikle şunları netleştirir:
+- DRG’nin **DSPy tabanlı, declarative** extraction yaklaşımı
+- DRG’nin **RAG/serving framework olmadığı** (UI query: deterministic KG lookup)
+- Dataset‑agnostic tasarım ve Enhanced schema yaklaşımı
+- Pipeline akışı, UI ve repo structure
+
 ## 🚀 Özellikler
 
 - **Declarative Schema**: Sadece entity tipleri ve ilişkileri tanımlayın, gerisini DRG halletsin
@@ -30,7 +41,7 @@ pip install .
 ## 🔧 Gereksinimler
 
 - Python >= 3.10
-- dspy >= 2.4.0
+- dspy >= 2.5.0
 
 ## ⚙️ Konfigürasyon
 

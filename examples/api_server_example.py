@@ -101,7 +101,7 @@ def main():
         if idx + 1 < len(argv):
             port = int(argv[idx + 1])
             del argv[idx:idx + 2]
-
+    
     # Example name: command line argument > environment variable > auto-detect latest > default
     if len(argv) > 0:
         example_name = argv[0]
@@ -141,7 +141,7 @@ def main():
         import json
         with open(path, "r", encoding="utf-8") as f:
             kg_data = json.load(f)
-
+        
         kg = EnhancedKG()
 
         # Load nodes (both formats share: {"id": "...", "type": "..."} at minimum)

@@ -13,8 +13,8 @@ from .schema import (
     EnhancedDRGSchema,
 )
 
-# Core extraction functions (lightweight - import directly)
-from .extract import extract_typed, extract_triples, KGExtractor, generate_schema_from_text
+# Extraction functions can pull optional heavy dependencies (e.g., DSPy).
+# Keep them lazily loaded so visualization/server usage doesn't require extraction deps.
 
 # Legacy graph class (lightweight)
 from .graph import KG
@@ -56,6 +56,11 @@ def __getattr__(name: str):
     """
     # Lazy loading mapping: name -> module_path
     lazy_imports = {
+        # Extraction (may require optional heavy deps)
+        "extract_typed": ".extract",
+        "extract_triples": ".extract",
+        "KGExtractor": ".extract",
+        "generate_schema_from_text": ".extract",
         # Graph module (heavy - many submodules)
         "PropertyDefinition": ".graph",
         "EntityClassDefinition": ".graph",

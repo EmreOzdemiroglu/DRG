@@ -15,6 +15,8 @@ from unittest.mock import Mock
 import re
 import math
 
+from .utils.llm_throttle import throttle_llm_calls
+
 from .schema import (
     DRGSchema, 
     EnhancedDRGSchema, 
@@ -156,8 +158,8 @@ def _parse_json_output(json_str: str, expected_format: str = "array") -> list:
                     f"Failed to parse JSON output even after markdown cleaning: {str(e)}. "
                     f"Input: {json_str[:200]}"
                 )
-                logger.error(error_msg)
-                raise ValueError(error_msg) from e
+            logger.error(error_msg)
+            raise ValueError(error_msg) from e
     
     # Validate format - raise error if format doesn't match expected (don't silently return empty)
     if expected_format == "array" and not isinstance(parsed, list):
@@ -628,7 +630,11 @@ class KGExtractor(dspy.Module):
                 relations=relations_list,
                 enriched_relations=enriched_relations,
             )
-        return ExtractionResult(entities=entities_list, relations=relations_list, enriched_relations=enriched_relations)
+        return ExtractionResult(
+            entities=entities_list,
+            relations=relations_list,
+            enriched_relations=enriched_relations,
+        )
 
 
 def _infer_relation_metadata_heuristic(
@@ -828,7 +834,7 @@ def extract_from_chunks(
     max_cross_chunk_context_chars: int = 1200,
     min_anchor_entity_len: int = 3,
     max_anchor_entities: int = 8,
-    two_pass_extraction: bool = True,  # Default True for better cross-chunk relationship discovery
+        two_pass_extraction: bool = True,  # Default True for better cross-chunk relationship discovery
     embedding_provider=None,  # Optional embedding provider for entity/coreference resolution
 ) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str, str]]]:
     """Extract entities and relations from multiple chunks with cross-chunk relationship support.
@@ -919,6 +925,7 @@ def extract_from_chunks(
             
             # Extract entities only (no relations in pass 1)
             # Use forward() but we'll only use entities
+            throttle_llm_calls()
             result = extractor(text=chunk_text)
             chunk_entities = result.entities if hasattr(result, 'entities') else []
             chunk_entities_list.append(chunk_entities)
@@ -952,7 +959,7 @@ def extract_from_chunks(
                 continue
             
             logger.info(f"Pass 2 - Processing chunk {i+1}/{len(chunks)} for relation extraction...")
-
+            
             # Deterministic intra-document evidence injection: add short excerpts from other chunks that share entities
             # with this chunk. This is NOT retrieval/RAG; it only reuses already-ingested document chunks.
             augmented_text = chunk_text
@@ -988,8 +995,10 @@ def extract_from_chunks(
                     )
 
             if enable_cross_chunk_relationships:
+                throttle_llm_calls()
                 result = extractor(text=augmented_text, context_entities=all_entities)
             else:
+                throttle_llm_calls()
                 result = extractor(text=chunk_text)
             
             chunk_relations = result.relations if hasattr(result, 'relations') else []
@@ -1013,8 +1022,10 @@ def extract_from_chunks(
             
             # Extract with context entities if enabled
             if enable_cross_chunk_relationships and context_entities:
+                throttle_llm_calls()
                 result = extractor(text=chunk_text, context_entities=context_entities)
             else:
+                throttle_llm_calls()
                 result = extractor(text=chunk_text)
             
             chunk_entities = result.entities if hasattr(result, 'entities') else []
@@ -1078,7 +1089,7 @@ def extract_from_chunks(
                 )
             except Exception as e:
                 logger.warning(f"Entity resolution failed: {e}")
-
+    
     # Optional: deterministic implicit relationship inference (schema-gated) on the concatenated text.
     if enable_implicit_relationships and all_entities:
         try:
@@ -1147,7 +1158,7 @@ def extract_from_chunks(
                     "   If this document is naturally hub-like, disable this gate via "
                     "DRG_VALIDATE_HUB_DOMINANCE=0 or set DRG_HUB_VALIDATION_MODE=warn."
                 )
-                raise ValueError("Hub dominance validation failed")
+            raise ValueError("Hub dominance validation failed")
     
     return all_entities, all_triples
 
@@ -1326,8 +1337,8 @@ def extract_typed(
     use_optimizer: bool = False,
     optimizer_config: Optional[Any] = None,
     training_examples: Optional[List[Dict[str, Any]]] = None,
-    return_enriched: bool = False,
-    min_confidence: Optional[float] = None,
+        return_enriched: bool = False,
+        min_confidence: Optional[float] = None,
 ) -> Union[
     Tuple[List[Tuple[str, str]], List[Tuple[str, str, str]]],
     Tuple[List[Tuple[str, str]], List[Tuple[str, str, str]], List[Dict[str, Any]]]
@@ -2035,6 +2046,7 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
     try:
         if hasattr(dspy, 'TypedPredictor'):
             schema_generator = dspy.TypedPredictor(SchemaGeneration, output_type=SchemaOutput)
+            throttle_llm_calls()
             schema_result = schema_generator(text=sample_text)
             # TypedPredictor returns Pydantic model directly
             if isinstance(schema_result, SchemaOutput):
@@ -2044,6 +2056,7 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
         else:
             # Fallback to ChainOfThought if TypedPredictor not available
             schema_generator = dspy.ChainOfThought(SchemaGeneration)
+            throttle_llm_calls()
             schema_result = schema_generator(text=sample_text)
             schema_str = schema_result.generated_schema if hasattr(schema_result, 'generated_schema') else "{}"
         
@@ -2051,7 +2064,7 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
     except Exception as e:
         logger.error(f"Schema generation failed: {e}")
         raise RuntimeError(f"Schema generation failed: {e}. Check your LLM configuration and API keys.") from e
-
+    
     # Parse JSON schema
     # DSPy TypedPredictor automatically retries until correct format is returned
     try:
@@ -2069,7 +2082,7 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
             "This usually means the LLM output format is incorrect. "
             "Check your LLM configuration or try a different model."
         ) from e
-
+    
     # Validate schema_data is not empty
     if not schema_data or (isinstance(schema_data, dict) and not schema_data):
         logger.error("Parsed schema JSON is empty")
@@ -2115,7 +2128,7 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
                     RelationGroup(
                         name="general",
                         description="General relations",
-                        relations=relations,
+                    relations=relations,
                     )
                 ],
                 auto_discovery=bool(schema_data.get("auto_discovery", False)),
@@ -2124,7 +2137,7 @@ def generate_schema_from_text(text: str, max_retries: int = 3, retry_delay: floa
             raise RuntimeError(
                 f"Schema generation output is not a valid EnhancedDRGSchema JSON: {e}"
             ) from e
-
+    
     # Add reverse relations automatically for bidirectional extraction support.
     schema = EnhancedDRGSchema(
         entity_types=schema.entity_types,
@@ -2229,7 +2242,7 @@ def _sample_text_for_schema_generation(text: str) -> str:
     logger.info(
         f"Metin çok uzun ({doc_len:,} karakter), {len(out_parts)} parça örnekleniyor "
         f"(~{sum(len(p) for p in out_parts):,} karakter, %{coverage:.1f} kapsam, bütçe={max_total_chars:,})..."
-    )
+                )
     return sampled
 
 

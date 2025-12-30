@@ -101,6 +101,9 @@ from .visualization_adapter import (
     VisualizationAdapter,
 )
 
+# Hub mitigation (export-time graph shaping)
+from .hub_mitigation import apply_hub_relation_proxy_split
+
 __all__ = [
     # Legacy KG
     "KG",
@@ -135,5 +138,7 @@ __all__ = [
     "ProvenanceEdge",
     "ProvenanceGraph",
     "VisualizationAdapter",
+    # Hub mitigation
+    "apply_hub_relation_proxy_split",
 ]
 

@@ -78,7 +78,7 @@ python --version
 
 **Minimum (Sadece Core):**
 ```bash
-pip install dspy>=2.4.0 litellm>=1.0.0
+pip install dspy>=2.5.0 litellm>=1.0.0
 pip install -e .
 ```
 
@@ -126,7 +126,7 @@ ls outputs/
 
 **Çözüm:**
 ```bash
-pip install dspy>=2.4.0
+pip install dspy>=2.5.0
 ```
 
 ### Problem: "litellm not found"

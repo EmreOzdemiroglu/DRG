@@ -13,17 +13,20 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 from enum import Enum
 import logging
 
-# Lazy import for optional DSPy dependency
+logger = logging.getLogger(__name__)
+
+# Lazy import for optional DSPy dependency.
+# Note: In some sandboxed environments, importing optional deps may raise non-ImportError
+# (e.g., PermissionError when reading site-packages). Treat all such failures as "unavailable".
 try:
     import dspy
     from pydantic import BaseModel
     DSPY_AVAILABLE = True
-except ImportError:
+except Exception as e:  # noqa: BLE001
     DSPY_AVAILABLE = False
     dspy = None
     BaseModel = None
-
-logger = logging.getLogger(__name__)
+    logger.debug("DSPy import unavailable; falling back to non-LLM relationship model: %s", e)
 
 
 # Relationship Type Taxonomy

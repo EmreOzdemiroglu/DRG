@@ -19,6 +19,7 @@ import sys
 import json
 import logging
 from pathlib import Path
+import os
 
 # Project root'a ekle
 project_root = Path(__file__).parent.parent
@@ -29,6 +30,7 @@ from drg.extract import extract_from_chunks, generate_schema_from_text
 from drg.schema import DRGSchema, EnhancedDRGSchema, Entity, Relation
 from drg.graph.kg_core import EnhancedKG, KGNode, KGEdge
 from drg.graph.builders import build_enhanced_kg
+from drg.graph.hub_mitigation import apply_hub_relation_proxy_split
 from drg.embedding import create_embedding_provider
 from drg.clustering import create_clustering_algorithm
 from drg.graph.community_report import CommunityReportGenerator
@@ -139,6 +141,11 @@ def run_full_pipeline(example_name: str = "1example"):
     schema = load_schema(example_name)
     if schema is None:
         logger.info("Schema not found, generating from text...")
+        # Auto-schema generation can exceed default max token budgets (some providers default ~1500),
+        # which leads to truncated JSON and parsing failures. If the user didn't set a budget,
+        # pick a safer default.
+        if not os.getenv("DRG_MAX_TOKENS"):
+            os.environ["DRG_MAX_TOKENS"] = "4096"
         schema = generate_schema_from_text(text)
         logger.info(f"Generated schema with {len(schema.entity_types) if isinstance(schema, EnhancedDRGSchema) else len(schema.entities)} entities")
     
@@ -187,6 +194,26 @@ def run_full_pipeline(example_name: str = "1example"):
     )
     
     logger.info(f"Created KG with {len(kg.nodes)} nodes and {len(kg.edges)} edges")
+
+    # Optional: Export-time hub mitigation (persisted in output KG).
+    # This reduces "single-node centered" star layouts (e.g., Company -> many Products)
+    # by re-routing high-degree hubs through relation-specific proxy nodes.
+    #
+    # Enable with:
+    #   export DRG_EXPORT_HUB_SPLIT=1
+    #   export DRG_EXPORT_HUB_SPLIT_THRESHOLD=8
+    export_hub_split = os.getenv("DRG_EXPORT_HUB_SPLIT", "1").strip().lower() in {"1", "true", "yes", "y"}
+    if export_hub_split:
+        try:
+            hub_threshold = int(os.getenv("DRG_EXPORT_HUB_SPLIT_THRESHOLD", "10"))
+        except Exception:
+            hub_threshold = 10
+        stats = apply_hub_relation_proxy_split(kg, hub_degree_threshold=hub_threshold, enabled=True)
+        logger.info(
+            f"🧩 Hub-split applied (export-time): hubs={stats['hubs']}, "
+            f"proxy_nodes={stats['proxy_nodes']}, edges_replaced={stats['edges_replaced']}, "
+            f"connector_edges={stats['connector_edges']} (threshold={hub_threshold})"
+        )
     
     # Step 6: Add entity embeddings
     logger.info("🧮 Step 6: Adding entity embeddings...")

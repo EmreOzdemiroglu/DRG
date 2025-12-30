@@ -40,6 +40,33 @@ class LMConfig:
         
         # Environment variable'lardan otomatik oku
         model = os.getenv("DRG_MODEL", "openai/gpt-4o-mini")
+        # Normalize common Gemini model formats to LiteLLM-friendly IDs.
+        #
+        # Users often paste "models/..." from Google docs, but LiteLLM's Gemini adapter already
+        # prefixes requests with "models/". If we pass "models/..." through, the URL becomes
+        # ".../models/models/<name>:generateContent" and returns 404.
+        model_stripped = model.strip()
+
+        # Accept "models/<name>" (Google docs) -> "gemini/<name>"
+        if model_stripped.startswith("models/"):
+            model_stripped = model_stripped[len("models/") :]
+
+        # Accept "gemini/models/<name>" -> "gemini/<name>"
+        if model_stripped.startswith("gemini/models/"):
+            model_stripped = "gemini/" + model_stripped[len("gemini/models/") :]
+
+        # Accept plain "gemini-..." without provider prefix -> "gemini/<name>"
+        if model_stripped.startswith("gemini-") or model_stripped.startswith("gemini_"):
+            model_stripped = f"gemini/{model_stripped}"
+
+        # If after stripping we still have no provider prefix but it's a Gemini model name,
+        # add the provider prefix.
+        if not model_stripped.startswith("gemini/") and "gemini" in model_stripped.lower():
+            # Avoid duplicating when user already passed e.g. "openrouter/..."
+            if "/" not in model_stripped:
+                model_stripped = f"gemini/{model_stripped}"
+
+        model = model_stripped
         
         # API key'leri environment'tan oku
         gemini_key = os.getenv("GEMINI_API_KEY")
@@ -147,7 +174,10 @@ class LMConfig:
         elif api_key:
             # Diğer servisler için api_key environment variable olarak set et
             if "gemini" in model_lower:
+                # Different SDK/adapters use different env var names for Gemini.
+                # Keep both to be robust (LiteLLM commonly reads GOOGLE_API_KEY).
                 os.environ["GEMINI_API_KEY"] = api_key
+                os.environ["GOOGLE_API_KEY"] = api_key
             elif "anthropic" in model_lower or "claude" in model_lower:
                 os.environ["ANTHROPIC_API_KEY"] = api_key
             elif "perplexity" in model_lower:
